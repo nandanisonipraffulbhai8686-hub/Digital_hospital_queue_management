@@ -1,0 +1,36 @@
+<h2>Billing Management</h2>
+
+<form method="POST">
+  <input name="token_no" placeholder="Token No" required>
+  <input name="amount" placeholder="Amount" required>
+  <button type="submit">Create Bill</button>
+</form>
+
+<hr>
+
+<table border="1" cellpadding="5">
+<tr>
+  <th>Token</th>
+  <th>Amount</th>
+  <th>Status</th>
+  <th>Action</th>
+</tr>
+
+{% for bill in bills %}
+<tr>
+  <td>{{ bill.token_no }}</td>
+  <td>₹{{ bill.amount }}</td>
+  <td>{{ bill.status }}</td>
+  <td>
+    {% if bill.status == "unpaid" %}
+      <a href="/billing/pay/{{ bill.token_no }}">Mark Paid</a>
+    {% else %}
+      ✅ Paid
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/admin">Back</a>

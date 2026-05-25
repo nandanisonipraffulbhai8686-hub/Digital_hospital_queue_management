@@ -1,0 +1,19 @@
+<h2>Appointments</h2>
+
+<table border="1">
+  <tr>
+    <th>Patient</th>
+    <th>Doctor</th>
+    <th>Department</th>
+    <th>Status</th>
+  </tr>
+
+  {% for a in appointments %}
+  <tr>
+    <td>{{ a.patient_name }}</td>
+    <td>{{ a.doctor_name }}</td>
+    <td>{{ a.department }}</td>
+    <td>{{ a.status }}</td>
+  </tr>
+  {% endfor %}
+</table>

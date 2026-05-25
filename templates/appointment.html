@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Book Appointment</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <div class="card p-4 shadow">
+    <h3 class="text-center mb-3">📅 Book Appointment</h3>
+
+    <form method="POST">
+      <div class="mb-3">
+        <label>Patient Name</label>
+        <input name="patient_name" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label>Department</label>
+        <select name="department" id="department" class="form-select" required>
+          <option value="">Select Department</option>
+          {% for d in departments %}
+            <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label>Doctor</label>
+        <select name="doctor" id="doctor" class="form-select" required>
+          <option value="">Select Doctor</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label>Date</label>
+        <input type="date" name="date" class="form-control" required>
+      </div>
+
+      <button class="btn btn-primary w-100">Book Appointment</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById("department").addEventListener("change", function () {
+    let dept = this.value;
+    let doctorSelect = document.getElementById("doctor");
+    doctorSelect.innerHTML = "<option>Loading...</option>";
+
+    fetch("/get-doctors?department=" + dept)
+        .then(res => res.json())
+        .then(data => {
+            doctorSelect.innerHTML = "<option value=''>Select Doctor</option>";
+            data.doctors.forEach(d => {
+                doctorSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+        });
+});
+</script>
+
+</body>
+</html>

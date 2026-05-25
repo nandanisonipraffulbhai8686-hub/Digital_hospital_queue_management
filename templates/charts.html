@@ -1,0 +1,31 @@
+<h2>Hospital Analytics</h2>
+
+<canvas id="tokenChart"></canvas>
+<br><br>
+<canvas id="statusChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(tokenChart, {
+  type: 'pie',
+  data: {
+    labels: ['Emergency', 'Normal'],
+    datasets: [{
+      data: [{{ emergency }}, {{ normal }}]
+    }]
+  }
+});
+
+new Chart(statusChart, {
+  type: 'bar',
+  data: {
+    labels: ['Completed', 'Waiting'],
+    datasets: [{
+      data: [{{ completed }}, {{ waiting }}]
+    }]
+  }
+});
+</script>
+
+<a href="/admin">Back</a>

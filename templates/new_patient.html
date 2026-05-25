@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Welcome New Patient</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #43cea2, #185a9d);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card {
+        width: 420px;
+        padding: 35px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        text-align: center;
+        color: #fff;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+        animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        font-size: 28px;
+    }
+
+    p {
+        margin-bottom: 30px;
+        opacity: 0.9;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 14px 30px;
+        background: #ffffff;
+        color: #185a9d;
+        border-radius: 30px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: 0.3s ease;
+    }
+
+    .btn:hover {
+        background: #185a9d;
+        color: #fff;
+        transform: scale(1.05);
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>Welcome {{ patient }}</h1>
+    <p>You are successfully registered as a new patient.</p>
+    <a class="btn" href="/new-patient/dashboard">Continue</a>
+</div>
+
+</body>
+</html>

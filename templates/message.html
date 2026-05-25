@@ -1,0 +1,192 @@
+from flask import Flask, render_template, request, redirect
+from bson import ObjectId
+
+from db import (
+    appointments_col,
+    doctors_col,
+    staff_col,
+    queues_col
+)
+
+app = Flask(__name__)
+
+# ---------------- HOME ----------------
+@app.route("/")
+def home():
+    return redirect("/login")
+
+
+# ---------------- LOGIN ----------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        role = request.form.get("role")
+        name = request.form.get("name")
+
+        # -------- PATIENT --------
+        if role == "patient":
+            return redirect(f"/patient/{name}")
+
+        # -------- DOCTOR --------
+        if role == "doctor":
+            doctor = doctors_col.find_one({"name": name})
+            if not doctor:
+                return render_template(
+                    "message.html",
+                    message="Doctor not found",
+                    type="error"
+                )
+            return redirect(f"/doctor/{name}")
+
+        # -------- STAFF --------
+        if role == "staff":
+            staff = staff_col.find_one({"name": name})
+            if not staff:
+                return render_template(
+                    "message.html",
+                    message="Access Denied: You are not registered as staff",
+                    type="error"
+                )
+            return redirect("/staff")
+
+    return render_template("login.html")
+
+
+# ---------------- PATIENT DASHBOARD ----------------
+@app.route("/patient/<name>")
+def patient_dashboard(name):
+    appointments = list(
+        appointments_col.find({"patient_name": name})
+    )
+
+    if not appointments:
+        return render_template(
+            "message.html",
+            message="No appointments found for this patient",
+            type="error"
+        )
+
+    return render_template(
+        "patient_dashboard.html",
+        appointments=appointments,
+        name=name
+    )
+
+
+# ---------------- DOCTOR DASHBOARD ----------------
+@app.route("/doctor/<doctor>")
+def doctor_dashboard(doctor):
+    appointments = list(
+        appointments_col.find({
+            "doctor": doctor,
+            "status": {"$ne": "completed"}
+        })
+    )
+
+    queue = queues_col.find_one({"doctor": doctor})
+    current_token = queue["current_token"] if queue else 0
+
+    return render_template(
+        "doctor_dashboard.html",
+        appointments=appointments,
+        doctor=doctor,
+        current_token=current_token
+    )
+
+
+# ---------------- NEXT TOKEN (NOW SERVING) ----------------
+@app.route("/next/<doctor>")
+def next_token(doctor):
+    queues_col.update_one(
+        {"doctor": doctor},
+        {"$inc": {"current_token": 1}}
+    )
+
+    appointments_col.update_one(
+        {
+            "doctor": doctor,
+            "status": "booked"
+        },
+        {"$set": {"status": "in-progress"}}
+    )
+
+    return redirect(f"/doctor/{doctor}")
+
+
+# ---------------- COMPLETE APPOINTMENT ----------------
+@app.route("/complete/<id>/<doctor>")
+def complete_appointment(id, doctor):
+    appointments_col.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"status": "completed"}}
+    )
+
+    return redirect(f"/doctor/{doctor}")
+
+
+# ---------------- STAFF DASHBOARD ----------------
+@app.route("/staff")
+def staff_dashboard():
+    appointments = list(appointments_col.find())
+    return render_template(
+        "staff_dashboard.html",
+        appointments=appointments
+    )
+
+
+# ---------------- MARK BILLING PAID ----------------
+@app.route("/pay/<id>")
+def mark_paid(id):
+    appointments_col.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"billing_status": "paid"}}
+    )
+    return redirect("/staff")
+
+
+# ---------------- APPOINTMENTS BOOKING ----------------
+@app.route("/appointments", methods=["GET", "POST"])
+def appointments():
+    if request.method == "POST":
+        name = request.form.get("name")
+        doctor = request.form.get("doctor")
+        date = request.form.get("date")
+
+        if not name or not doctor or not date:
+            return render_template(
+                "message.html",
+                message="All fields are required",
+                type="error"
+            )
+
+        last = appointments_col.find_one(
+            sort=[("token", -1)]
+        )
+        next_token = last["token"] + 1 if last else 1
+
+        appointments_col.insert_one({
+            "patient_name": name,
+            "doctor": doctor,
+            "date": date,
+            "token": next_token,
+            "status": "booked",
+            "billing_status": "unpaid"
+        })
+
+        return render_template(
+            "message.html",
+            message="Appointment booked successfully",
+            type="success"
+        )
+
+    doctors = list(doctors_col.find())
+    return render_template(
+        "appointment.html",
+        doctors=doctors
+    )
+
+
+# ---------------- RUN ----------------
+if __name__ == "__main__":
+    print(app.url_map)
+    app.run(debug=True)

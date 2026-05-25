@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Registration</title>
+</head>
+<body>
+    <h2>Register Patient</h2>
+
+    <form action="/generate_token" method="post">
+        <input name="name" placeholder="Name" required><br><br>
+        <input name="age" placeholder="Age" required><br><br>
+        <input name="disease" placeholder="Disease" required><br><br>
+
+        <label>
+            <input type="checkbox" name="emergency" value="yes">
+            Emergency Case
+        </label><br><br>
+
+        <button type="submit">Generate Token</button>
+    </form>
+
+    <hr>
+
+    <h2>Check Queue Status</h2>
+    <form action="/check_status" method="post">
+        <input name="token_no" placeholder="Token Number" required><br><br>
+        <button type="submit">Check Status</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', sans-serif; min-height: 100vh;
+            background: linear-gradient(135deg, #6a4fd8 0%, #7c5ce8 30%, #9b6de8 60%, #b36fd4 100%);
+            padding: 20px;
+        }
+
+        /* ── FLASH ── */
+        .flash { padding: 13px 18px; border-radius: 12px; margin-bottom: 14px;
+                 font-size: 14px; font-weight: 600; color: white; animation: fadeUp 0.4s ease; }
+        .flash.success { background: #22c55e; }
+        .flash.error   { background: #ff4d4d; }
+        .flash.warning { background: #ff9500; }
+        .flash.info    { background: #3b82f6; }
+
+        /* ── HEADER ── */
+        .header {
+            background: rgba(255,255,255,0.18); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.25); border-radius: 18px;
+            padding: 18px 28px; display: flex; align-items: center;
+            justify-content: space-between; margin-bottom: 22px;
+        }
+        .header-left h1 { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
+        .header-left p  { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 3px; }
+        .header-right   { display: flex; align-items: center; gap: 10px; }
+        .btn-logout {
+            background: #ff4d4d; color: white; border: none; border-radius: 10px;
+            padding: 10px 22px; font-family: 'Poppins', sans-serif; font-size: 13px;
+            font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
+        }
+        .btn-logout:hover { background: #e03e3e; }
+        .icon-circle { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        .icon-circle.bell   { background: #ff9500; }
+        .icon-circle.avatar { background: #f5c518; }
+
+        /* ── STATS GRID ── */
+        .stats-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 14px; margin-bottom: 22px; }
+        .stat-card {
+            background: rgba(255,255,255,0.85); border-radius: 18px; padding: 22px 16px 18px;
+            text-align: center; backdrop-filter: blur(8px);
+            transition: transform 0.2s, box-shadow 0.2s; animation: fadeUp 0.5s ease both;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
+        .stat-icon  { font-size: 28px; margin-bottom: 8px; }
+        .stat-value { font-size: 32px; font-weight: 800; color: #1a1a2e; line-height: 1; margin-bottom: 6px; }
+        .stat-label { font-size: 12px; color: #666; font-weight: 500; }
+        .stat-card.emerg .stat-value { color: #ff4d4d; }
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(34,197,94,0.12); color: #16a34a;
+            border: 1.5px solid #22c55e; border-radius: 20px;
+            font-size: 12px; font-weight: 600; padding: 3px 12px; margin-top: 6px;
+        }
+        .dot-green { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+                     box-shadow: 0 0 8px #22c55e; animation: pulse-dot 1.5s infinite; }
+
+        /* ── WHITE CARD ── */
+        .white-card { background: rgba(255,255,255,0.92); border-radius: 18px; padding: 24px; backdrop-filter: blur(8px); animation: fadeUp 0.5s ease both; }
+        .card-title { font-size: 16px; font-weight: 700; color: #6a4fd8; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+
+        /* ── GRIDS ── */
+        .mid-grid    { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+
+        /* ── FORMS ── */
+        .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="text"], input[type="password"], select, input[list] {
+            background: #f3f0ff; border: 1.5px solid #e0d8ff; border-radius: 10px;
+            padding: 9px 12px; font-family: 'Poppins', sans-serif; font-size: 12px;
+            color: #1a1a2e; outline: none; transition: border-color 0.2s; width: 100%;
+        }
+        input:focus, select:focus { border-color: #7c5ce8; background: #ede8ff; }
+        input::placeholder { color: #aaa; }
+        select option { background: white; }
+
+        .btn-add {
+            width: 100%; padding: 11px; border: none; border-radius: 12px;
+            font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; margin-top: 4px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-add.purple { background: linear-gradient(135deg,#7c5ce8,#6a4fd8); color: white; box-shadow: 0 4px 16px rgba(124,92,232,0.4); }
+        .btn-add.purple:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,92,232,0.5); }
+        .btn-add.green  { background: linear-gradient(135deg,#22c55e,#16a34a); color: white; box-shadow: 0 4px 16px rgba(34,197,94,0.35); }
+        .btn-add.green:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
+
+        /* ── LIST ITEMS ── */
+        .section-mini-title { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 8px; }
+        .list-scroll { max-height: 240px; overflow-y: auto; padding-right: 2px; }
+        .list-scroll::-webkit-scrollbar { width: 4px; }
+        .list-scroll::-webkit-scrollbar-thumb { background: #ede8ff; border-radius: 4px; }
+        .list-item {
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            background: #f3f0ff; border-radius: 10px; margin-bottom: 6px; transition: background 0.2s;
+        }
+        .list-item:hover { background: #ede8ff; }
+        .list-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+        .list-info  { flex: 1; min-width: 0; }
+        .list-name  { font-size: 12px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-sub   { font-size: 10px; color: #888; }
+        .pill { font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+        .pill-purple { background: rgba(124,92,232,0.12); color: #7c5ce8; }
+        .pill-green  { background: rgba(34,197,94,0.12);  color: #16a34a; }
+        .pill-red    { background: rgba(255,77,77,0.12);   color: #ff4d4d; }
+        .pill-orange { background: rgba(255,149,0,0.12);   color: #e07900; }
+        .pill-blue   { background: rgba(59,130,246,0.12);  color: #1d4ed8; }
+        .btn-del {
+            width: 24px; height: 24px; border-radius: 50%; background: rgba(255,77,77,0.1);
+            border: none; color: #ff4d4d; cursor: pointer; font-size: 12px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
+        }
+        .btn-del:hover { background: #ff4d4d; color: white; }
+
+        /* ── EMERGENCY ── */
+        .emergency-item {
+            display: flex; align-items: flex-start; gap: 10px; background: #fff0f0;
+            border: 1.5px solid #ffcdd2; border-radius: 12px; padding: 12px; margin-bottom: 8px;
+            animation: blink 2s infinite;
+        }
+        .em-icon  { width: 34px; height: 34px; border-radius: 10px; background: #ffe0e0; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .em-name  { font-size: 13px; font-weight: 700; color: #cc0000; }
+        .em-issue { font-size: 11px; color: #888; margin-top: 2px; }
+        .em-time  { margin-left: auto; font-size: 10px; font-weight: 700; color: #ff4d4d; white-space: nowrap; }
+
+        /* ── CHART BARS ── */
+        .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; margin-top: 10px; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bar { width: 100%; border-radius: 6px 6px 0 0; background: rgba(124,92,232,0.2); }
+        .bar.active { background: linear-gradient(180deg,#7c5ce8,rgba(124,92,232,0.4)); }
+        .bar-label { font-size: 9px; color: #aaa; }
+
+        /* ── QUICK ACTIONS ── */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+        .qa-btn { background: #f3f0ff; border: none; border-radius: 12px; padding: 14px 10px; cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Poppins',sans-serif; text-decoration: none; display: block; }
+        .qa-btn:hover { background: #ede8ff; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(124,92,232,0.2); }
+        .qa-icon  { font-size: 20px; margin-bottom: 6px; }
+        .qa-label { font-size: 11px; font-weight: 600; color: #6a4fd8; }
+
+        /* ── SECTION LABEL ── */
+        .section-label { font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.2); }
+
+        /* ── TABLE ── */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; color: white; }
+        .data-table td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #f0eeff; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: #f9f7ff; }
+        .th-purple { background: linear-gradient(135deg,#7c5ce8,#6a4fd8); }
+        .th-green  { background: linear-gradient(135deg,#22c55e,#16a34a); }
+
+        /* ── ACTIVITY ── */
+        .activity-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0eeff; }
+        .activity-item:last-child { border-bottom: none; }
+        .act-dot  { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+        .act-text { font-size: 12px; color: #555; line-height: 1.5; }
+        .act-text strong { color: #1a1a2e; font-weight: 600; }
+        .act-time { font-size: 10px; color: #bbb; }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pulse-dot { 0%,100%{ box-shadow:0 0 6px #22c55e; } 50%{ box-shadow:0 0 14px #22c55e; } }
+        @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.88; } }
+
+        .stat-card:nth-child(1){animation-delay:0.05s;}
+        .stat-card:nth-child(2){animation-delay:0.10s;}
+        .stat-card:nth-child(3){animation-delay:0.15s;}
+        .stat-card:nth-child(4){animation-delay:0.20s;}
+        .stat-card:nth-child(5){animation-delay:0.25s;}
+        .stat-card:nth-child(6){animation-delay:0.30s;}
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+        @media(max-width:1200px){ .stats-grid{grid-template-columns:repeat(3,1fr);} .mid-grid,.bottom-grid{grid-template-columns:1fr 1fr;} }
+        @media(max-width:700px) { .stats-grid{grid-template-columns:repeat(2,1fr);} .mid-grid,.bottom-grid{grid-template-columns:1fr;} .form-row{grid-template-columns:1fr;} }
+    </style>
+</head>
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+    <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <h1>🏥 Welcome, Admin</h1>
+            <p>Hospital Management System — Full Control Panel</p>
+        </div>
+        <div class="header-right">
+            <a href="/logout" class="btn-logout">Logout</a>
+            <div class="icon-circle bell">🔔</div>
+            <div class="icon-circle avatar">👤</div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👨‍⚕️</div>
+            <div class="stat-value">{{ doctors|length }}</div>
+            <div class="stat-label">Total Doctors</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">{{ staff|length }}</div>
+            <div class="stat-label">Total Staff</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🛏️</div>
+            <div class="stat-value">{{ all_appointments|length }}</div>
+            <div class="stat-label">Patients Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-value">{{ all_appointments|selectattr("status","in",["Booked","Rescheduled"])|list|length }}</div>
+            <div class="stat-label">Pending Appts</div>
+        </div>
+        <div class="stat-card emerg">
+            <div class="stat-icon">🚨</div>
+            <div class="stat-value">{{ emergencies|length }}</div>
+            <div class="stat-label">Emergencies</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-value" style="color:#22c55e;">
+                {{ doctors|selectattr("status_override","ne","offline")|list|length if doctors else doctors|length }}
+            </div>
+            <div class="stat-label">Available</div>
+            <div class="status-pill"><div class="dot-green"></div> Live</div>
+        </div>
+    </div>
+
+    <!-- MID ROW -->
+    <div class="section-label">Manage Hospital</div>
+    <div class="mid-grid">
+
+        <!-- ADD DOCTOR -->
+        <div class="white-card">
+            <div class="card-title">👨‍⚕️ Register Doctor</div>
+            <form method="POST" action="/admin/add-doctor">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="name" placeholder="Dr. Arjun Shah" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Department *</label>
+                        <input type="text" name="department" placeholder="e.g. Cardiology"
+                               list="deptList" required autocomplete="off">
+                        <datalist id="deptList">
+                            {% set seen_depts = [] %}
+                            {% for d in doctors %}
+                                {% if d.department not in seen_depts %}
+                                    <option value="{{ d.department }}">
+                                    {% set _ = seen_depts.append(d.department) %}
+                                {% endif %}
+                            {% endfor %}
+                            <option value="Cardiology"><option value="Neurology">
+                            <option value="Orthopedics"><option value="Pediatrics">
+                            <option value="General Medicine"><option value="Emergency">
+                            <option value="Dermatology"><option value="ENT">
+                            <option value="Oncology"><option value="Gynecology">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" name="username" placeholder="dr.arjun" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" name="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-add purple">➕ Add Doctor</button>
+            </form>
+
+            <div class="section-mini-title">Doctors on duty ({{ doctors|length }})</div>
+            <div class="list-scroll">
+                {% for d in doctors %}
+                <div class="list-item">
+                    <div class="list-avatar" style="background:#ede8ff;color:#7c5ce8;">{{ d.name[0]|upper if d.name else 'D' }}</div>
+                    <div class="list-info">
+                        <div class="list-name">{{ d.name }}</div>
+                        <div class="list-sub">{{ d.department }} · @{{ d.username }}</div>
+                    </div>
+                    <div class="pill pill-purple">{{ d.department }}</div>
+                    <form method="POST" action="/admin/delete-doctor" style="margin:0;">
+                        <input type="hidden" name="doctor_id" value="{{ d._id }}">
+                        <button class="btn-del" type="submit" onclick="return confirm('Remove Dr. {{ d.name }}?')">✕</button>
+                    </form>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No doctors yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ADD STAFF -->
+        <div class="white-card">
+            <div class="card-title">🪪 Register Staff</div>
+            <form method="POST" action="/admin/add-staff">
+                <div class="form-row">
+                    <div class="form-group full">
+                        <label>Staff Name *</label>
+                        <input type="text" name="name" placeholder="Meena Patel" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <input type="text" name="role" placeholder="Nurse / Receptionist" list="roleList">
+                        <datalist id="roleList">
+                            <option value="Nurse"><option value="Receptionist">
+                            <option value="Lab Technician"><option value="Pharmacist">
+                            <option value="Ward Boy"><option value="Radiologist">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" name="username" placeholder="meena.p" required>
+                    </div>
+                    <div class="form-group full">
+                        <label>Password *</label>
+                        <input type="password" name="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-add green">➕ Add Staff</button>
+            </form>
+
+            <div class="section-mini-title">Staff members ({{ staff|length }})</div>
+            <div class="list-scroll">
+                {% for s in staff %}
+                <div class="list-item">
+                    <div class="list-avatar" style="background:#e8fff3;color:#16a34a;">{{ s.name[0]|upper if s.name else 'S' }}</div>
+                    <div class="list-info">
+                        <div class="list-name">{{ s.name }}</div>
+                        <div class="list-sub">@{{ s.username }}{% if s.role %} · {{ s.role }}{% endif %}</div>
+                    </div>
+                    <div class="pill pill-green">{{ s.role if s.role else 'Staff' }}</div>
+                    <form method="POST" action="/admin/delete-staff" style="margin:0;">
+                        <input type="hidden" name="staff_id" value="{{ s._id }}">
+                        <button class="btn-del" type="submit" onclick="return confirm('Remove {{ s.name }}?')">✕</button>
+                    </form>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No staff yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- EMERGENCIES + TODAY'S APPOINTMENTS -->
+        <div class="white-card">
+            <div class="card-title" style="color:#ff4d4d;">🚨 Emergency Patients</div>
+            <div class="list-scroll" style="max-height:160px;">
+                {% for e in emergencies %}
+                <div class="emergency-item">
+                    <div class="em-icon">❤️</div>
+                    <div>
+                        <div class="em-name">{{ e.username }}</div>
+                        <div class="em-issue">{{ e.get('doctor','') }}{% if e.get('time') %} · {{ e.time }}{% endif %}</div>
+                    </div>
+                    <div class="em-time">⚡ NOW</div>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:16px;color:#aaa;font-size:12px;">✅ No active emergencies</div>
+                {% endfor %}
+            </div>
+
+            <div class="section-mini-title" style="margin-top:14px;">Today's Appointments ({{ all_appointments|length }})</div>
+            <div class="list-scroll">
+                {% for a in all_appointments %}
+                <div class="list-item">
+                    <div class="list-avatar" style="background:#f3f0ff;color:#7c5ce8;">{{ a.username[0]|upper if a.username else 'P' }}</div>
+                    <div class="list-info">
+                        <div class="list-name">{{ a.username }}</div>
+                        <div class="list-sub">{{ a.doctor }} · {{ a.time }}</div>
+                    </div>
+                    <div class="pill {% if a.status=='Completed' %}pill-green{% elif a.status in ['Cancelled','Emergency'] %}pill-red{% else %}pill-purple{% endif %}">{{ a.status }}</div>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:14px;color:#aaa;font-size:12px;">No appointments today</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="section-label">Analytics & Actions</div>
+    <div class="bottom-grid">
+
+        <!-- CHART -->
+        <div class="white-card">
+            <div class="card-title">📊 Patient Admissions</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:4px;">
+                <span>Weekly trend</span>
+                <span style="color:#22c55e;font-weight:600;" id="trendLabel">This week</span>
+            </div>
+            <div class="chart-bars" id="chartBars">
+                <!-- JS renders bars from live data -->
+                <div class="bar-wrap"><div class="bar" style="height:40px;"></div><div class="bar-label">Mon</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:55px;"></div><div class="bar-label">Tue</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:35px;"></div><div class="bar-label">Wed</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:65px;"></div><div class="bar-label">Thu</div></div>
+                <div class="bar-wrap"><div class="bar active" style="height:{{ [all_appointments|length * 3, 80]|min + 10 }}px;"></div><div class="bar-label">Fri</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:45px;"></div><div class="bar-label">Sat</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:25px;"></div><div class="bar-label">Sun</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">
+                <div style="background:#f3f0ff;border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:#7c5ce8;">{{ all_appointments|length }}</div>
+                    <div style="font-size:10px;color:#aaa;">Today</div>
+                </div>
+                <div style="background:#e8fff3;border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:#16a34a;">{{ all_appointments|selectattr("status","equalto","Completed")|list|length }}</div>
+                    <div style="font-size:10px;color:#aaa;">Completed</div>
+                </div>
+                <div style="background:#fff0f0;border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:#ff4d4d;">{{ emergencies|length }}</div>
+                    <div style="font-size:10px;color:#aaa;">Emergency</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY FEED -->
+        <div class="white-card">
+            <div class="card-title">🕐 Recent Activity</div>
+            {% for d in doctors[:3] %}
+            <div class="activity-item">
+                <div class="act-dot" style="background:#7c5ce8;"></div>
+                <div>
+                    <div class="act-text"><strong>Dr. {{ d.name }}</strong> registered in {{ d.department }}</div>
+                    <div class="act-time">Doctor account</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% for s in staff[:2] %}
+            <div class="activity-item">
+                <div class="act-dot" style="background:#22c55e;"></div>
+                <div>
+                    <div class="act-text"><strong>{{ s.name }}</strong> added as {{ s.role if s.role else 'Staff' }}</div>
+                    <div class="act-time">@{{ s.username }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% for a in all_appointments[:3] %}
+            <div class="activity-item">
+                <div class="act-dot" style="background:#ff9500;"></div>
+                <div>
+                    <div class="act-text"><strong>{{ a.username }}</strong> → {{ a.doctor }}</div>
+                    <div class="act-time">{{ a.status }} · {{ a.time }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not doctors and not staff and not all_appointments %}
+            <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No activity yet</div>
+            {% endif %}
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="white-card">
+            <div class="card-title">⚡ Quick Actions</div>
+            <div class="qa-grid">
+                <a href="/admin" class="qa-btn"><div class="qa-icon">🔄</div><div class="qa-label">Refresh</div></a>
+                <button class="qa-btn" onclick="exportCSV()"><div class="qa-icon">📥</div><div class="qa-label">Export CSV</div></button>
+                <button class="qa-btn" onclick="window.print()"><div class="qa-icon">🖨️</div><div class="qa-label">Print</div></button>
+                <a href="/logout" class="qa-btn"><div class="qa-icon">🚪</div><div class="qa-label">Logout</div></a>
+            </div>
+
+            <div style="margin-top:18px;background:#f3f0ff;border-radius:12px;padding:14px;">
+                <div style="font-size:11px;font-weight:700;color:#7c5ce8;margin-bottom:10px;">📋 SYSTEM SUMMARY</div>
+                <div style="font-size:12px;color:#555;display:flex;flex-direction:column;gap:6px;">
+                    <div>👨‍⚕️ <strong>{{ doctors|length }}</strong> Doctors across
+                        {% set dept_count = [] %}
+                        {% for d in doctors %}{% if d.department not in dept_count %}{% set _ = dept_count.append(d.department) %}{% endif %}{% endfor %}
+                        <strong>{{ dept_count|length }}</strong> departments
+                    </div>
+                    <div>👥 <strong>{{ staff|length }}</strong> Staff members registered</div>
+                    <div>📅 <strong>{{ all_appointments|length }}</strong> appointments today</div>
+                    <div>🚨 <strong>{{ emergencies|length }}</strong> active emergencies</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEPARTMENTS OVERVIEW -->
+    <div class="section-label">Departments</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px;">
+        {% set dept_map = {} %}
+        {% for d in doctors %}
+            {% if d.department %}
+                {% if d.department in dept_map %}
+                    {% set _ = dept_map.update({d.department: dept_map[d.department] + 1}) %}
+                {% else %}
+                    {% set _ = dept_map.update({d.department: 1}) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% for dept, count in dept_map.items() %}
+        <div class="white-card" style="padding:18px;text-align:center;">
+            <div style="font-size:26px;margin-bottom:8px;">
+                {% set dl = dept|lower %}
+                {% if 'cardio' in dl %}❤️{% elif 'neuro' in dl %}🧠{% elif 'ortho' in dl %}🦴
+                {% elif 'pedia' in dl %}👶{% elif 'ent' in dl %}👂{% elif 'onco' in dl %}🎗️
+                {% elif 'gynec' in dl or 'gynaec' in dl %}🌸{% elif 'derma' in dl %}🧴
+                {% elif 'eye' in dl or 'ophth' in dl %}👁️{% elif 'emerg' in dl %}🚨
+                {% else %}🏥{% endif %}
+            </div>
+            <div style="font-size:22px;font-weight:800;color:#7c5ce8;">{{ count }}</div>
+            <div style="font-size:11px;color:#888;font-weight:600;margin-top:2px;">{{ dept }}</div>
+            <div style="font-size:10px;color:#aaa;">doctor{{ 's' if count != 1 }}</div>
+        </div>
+        {% else %}
+        <div class="white-card" style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa;font-size:13px;">
+            No departments yet — add doctors to see departments here.
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- FULL DOCTOR TABLE -->
+    <div class="section-label">Doctor Directory</div>
+    <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+        <div class="card-title">👨‍⚕️ All Registered Doctors ({{ doctors|length }})</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="th-purple">Name</th>
+                    <th class="th-purple">Department</th>
+                    <th class="th-purple">Username</th>
+                    <th class="th-purple">Status</th>
+                    <th class="th-purple">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in doctors %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:30px;height:30px;border-radius:8px;background:#ede8ff;color:#7c5ce8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ d.name[0]|upper }}</div>
+                            <span style="font-weight:600;color:#1a1a2e;">{{ d.name }}</span>
+                        </div>
+                    </td>
+                    <td><span class="pill pill-purple">{{ d.department }}</span></td>
+                    <td style="color:#888;">@{{ d.username }}</td>
+                    <td>
+                        {% if d.get('status_override','available') == 'offline' %}
+                            <span class="pill pill-red">Offline</span>
+                        {% else %}
+                            <span class="pill pill-green">Available</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="/admin/delete-doctor" style="margin:0;display:inline;">
+                            <input type="hidden" name="doctor_id" value="{{ d._id }}">
+                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;"
+                                    onclick="return confirm('Remove Dr. {{ d.name }}?')">🗑️ Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa;">No doctors registered yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- FULL STAFF TABLE -->
+    <div class="section-label">Staff Directory</div>
+    <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+        <div class="card-title">🪪 All Registered Staff ({{ staff|length }})</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="th-green">Name</th>
+                    <th class="th-green">Username</th>
+                    <th class="th-green">Role</th>
+                    <th class="th-green">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in staff %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:30px;height:30px;border-radius:8px;background:#e8fff3;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ s.name[0]|upper }}</div>
+                            <span style="font-weight:600;color:#1a1a2e;">{{ s.name }}</span>
+                        </div>
+                    </td>
+                    <td style="color:#888;">@{{ s.username }}</td>
+                    <td><span class="pill pill-green">{{ s.role if s.role else 'Staff' }}</span></td>
+                    <td>
+                        <form method="POST" action="/admin/delete-staff" style="margin:0;display:inline;">
+                            <input type="hidden" name="staff_id" value="{{ s._id }}">
+                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;"
+                                    onclick="return confirm('Remove {{ s.name }}?')">🗑️ Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="padding:30px;text-align:center;color:#aaa;">No staff registered yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+    function exportCSV(){
+        const rows=[['Name','Department','Username','Status']];
+        {% for d in doctors %}
+        rows.push(['{{ d.name|replace("'","") }}','{{ d.department|replace("'","") }}','{{ d.username }}','{{ d.get("status_override","available") }}']);
+        {% endfor %}
+        const csv=rows.map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
+        const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+        a.download='doctors_list.csv'; a.click();
+    }
+    </script>
+</body>
+</html>

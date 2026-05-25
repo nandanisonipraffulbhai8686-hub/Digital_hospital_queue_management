@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Queue Display</title>
+    <meta http-equiv="refresh" content="5">
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: black;
+            color: white;
+        }
+        h1 { font-size: 50px; }
+        h2 { font-size: 40px; color: yellow; }
+        li { font-size: 30px; }
+    </style>
+</head>
+<body>
+
+    <h1>Hospital Queue Status</h1>
+
+    <h2>
+        Currently Serving:
+        {{ current.token_no if current else "None" }}
+    </h2>
+
+    <h1>Next Tokens</h1>
+    <ul>
+        {% for t in upcoming %}
+        <li>
+            Token {{ t.token_no }}
+            {% if t.priority == 1 %}(Emergency){% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>

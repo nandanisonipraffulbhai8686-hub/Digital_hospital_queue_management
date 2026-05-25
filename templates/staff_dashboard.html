@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+        --purple:       #7c3aed;
+        --purple-light: #8b5cf6;
+        --purple-pale:  #ede9fe;
+        --purple-bg:    #f3f0ff;
+        --indigo:       #4f46e5;
+        --bg:           #f0eeff;
+        --white:        #ffffff;
+        --card-bg:      #ffffff;
+        --text1:        #1e1b4b;
+        --text2:        #4c4882;
+        --text3:        #9490c0;
+        --border:       #e5e1ff;
+        --green:        #22c55e;
+        --green-bg:     #dcfce7;
+        --amber:        #f59e0b;
+        --amber-bg:     #fef3c7;
+        --red:          #ef4444;
+        --red-bg:       #fee2e2;
+        --blue:         #3b82f6;
+        --blue-bg:      #dbeafe;
+        --cyan:         #06b6d4;
+        --cyan-bg:      #cffafe;
+        --pink:         #ec4899;
+        --pink-bg:      #fce7f3;
+    }
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        background: var(--bg);
+        color: var(--text1);
+        min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #4f46e5 100%);
+        padding: 0 28px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .brand-icon {
+        width: 40px; height: 40px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px;
+    }
+    .brand-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.3px;
+    }
+    .brand-sub {
+        font-size: 11px;
+        color: rgba(255,255,255,0.65);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .topbar-clock {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 20px;
+        padding: 6px 14px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .live-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(34,197,94,0.2);
+        border: 1px solid rgba(34,197,94,0.4);
+        border-radius: 20px;
+        padding: 5px 13px;
+        color: #86efac;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .live-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #4ade80;
+        box-shadow: 0 0 8px #4ade80;
+        animation: pulse 1.5s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6)} }
+    .top-icon-btn {
+        width: 36px; height: 36px;
+        background: rgba(255,255,255,0.15);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        position: relative;
+        transition: background 0.2s;
+    }
+    .top-icon-btn:hover { background: rgba(255,255,255,0.25); }
+    .notif-badge {
+        position: absolute;
+        top: -2px; right: -2px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 800;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid #7c3aed;
+    }
+    .logout-btn {
+        background: #ef4444;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: 'Nunito', sans-serif;
+        transition: all 0.2s;
+    }
+    .logout-btn:hover { background: #dc2626; transform: translateY(-1px); }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #4f46e5 100%);
+        margin: 24px 24px 0;
+        border-radius: 16px;
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 8px 32px rgba(124,58,237,0.3);
+        animation: slideDown 0.5s ease both;
+    }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+    .welcome-text h2 {
+        font-size: 22px;
+        font-weight: 900;
+        color: #fff;
+    }
+    .welcome-text p {
+        font-size: 13px;
+        color: rgba(255,255,255,0.7);
+        margin-top: 3px;
+    }
+    .welcome-emoji { font-size: 32px; }
+
+    /* ── MAIN WRAPPER ── */
+    .page { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 2px;
+    }
+
+    /* ── STAT GRID ── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+    }
+    @media(max-width:1200px){ .stat-grid { grid-template-columns: repeat(3,1fr); } }
+    @media(max-width:700px)  { .stat-grid { grid-template-columns: repeat(2,1fr); } }
+
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(124,58,237,0.08);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+        transition: all 0.25s;
+        animation: cardIn 0.5s both;
+        cursor: default;
+    }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(124,58,237,0.14); }
+    .stat-card:nth-child(1){animation-delay:0.05s}
+    .stat-card:nth-child(2){animation-delay:0.1s}
+    .stat-card:nth-child(3){animation-delay:0.15s}
+    .stat-card:nth-child(4){animation-delay:0.2s}
+    .stat-card:nth-child(5){animation-delay:0.25s}
+    .stat-card:nth-child(6){animation-delay:0.3s}
+    @keyframes cardIn { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+    .stat-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+    .stat-value {
+        font-size: 30px;
+        font-weight: 900;
+        color: var(--text1);
+        line-height: 1;
+    }
+    .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+    }
+    .stat-delta {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin-top: 2px;
+    }
+    .d-up   { background: var(--green-bg); color: var(--green); }
+    .d-down { background: var(--red-bg);   color: var(--red); }
+    .d-neu  { background: var(--purple-pale); color: var(--purple); }
+
+    /* ── 2-COL GRID ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media(max-width:960px){ .two-col { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 12px rgba(124,58,237,0.07);
+        overflow: hidden;
+        animation: cardIn 0.5s 0.2s both;
+    }
+    .card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(90deg, var(--purple-bg) 0%, #fff 100%);
+    }
+    .card-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text1);
+    }
+    .card-title-icon {
+        width: 32px; height: 32px;
+        border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+    }
+    .card-body { padding: 16px 20px; }
+
+    .action-pill {
+        font-size: 12px;
+        font-weight: 700;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-family: 'Nunito', sans-serif;
+        transition: all 0.2s;
+    }
+    .ap-purple { background: var(--purple-pale); color: var(--purple); }
+    .ap-purple:hover { background: var(--purple); color: #fff; }
+    .ap-green  { background: var(--green-bg); color: var(--green); }
+    .ap-green:hover  { background: var(--green); color: #fff; }
+    .ap-red    { background: var(--red-bg); color: var(--red); }
+    .ap-red:hover    { background: var(--red); color: #fff; }
+    .ap-amber  { background: var(--amber-bg); color: var(--amber); }
+    .ap-amber:hover  { background: var(--amber); color: #fff; }
+    .ap-blue   { background: var(--blue-bg); color: var(--blue); }
+    .ap-blue:hover   { background: var(--blue); color: #fff; }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 9px 14px;
+        margin-bottom: 14px;
+        transition: all 0.2s;
+    }
+    .search-wrap:focus-within {
+        border-color: var(--purple-light);
+        box-shadow: 0 0 0 3px var(--purple-pale);
+    }
+    .search-wrap input {
+        background: none;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text1);
+        font-family: 'Nunito', sans-serif;
+        flex: 1;
+    }
+    .search-wrap input::placeholder { color: var(--text3); }
+
+    /* ── APPOINTMENT TABLE ── */
+    .appt-table { width: 100%; border-collapse: collapse; }
+    .appt-table th {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 0 0 10px;
+        text-align: left;
+        border-bottom: 2px solid var(--border);
+    }
+    .appt-table td {
+        padding: 10px 0;
+        font-size: 13px;
+        color: var(--text2);
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+    .appt-table tr:last-child td { border-bottom: none; }
+    .appt-table tr:hover td { background: var(--purple-bg); }
+
+    .pat-cell { display: flex; align-items: center; gap: 9px; }
+    .pat-av {
+        width: 34px; height: 34px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .av-a { background: linear-gradient(135deg,#7c3aed,#4f46e5); }
+    .av-b { background: linear-gradient(135deg,#ec4899,#8b5cf6); }
+    .av-c { background: linear-gradient(135deg,#06b6d4,#4f46e5); }
+    .av-d { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+    .av-e { background: linear-gradient(135deg,#22c55e,#06b6d4); }
+    .pat-name { font-size: 13px; font-weight: 700; color: var(--text1); }
+    .pat-id   { font-size: 11px; color: var(--text3); font-weight: 600; }
+
+    .status-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 11px; font-weight: 800;
+        padding: 3px 10px; border-radius: 20px;
+    }
+    .sp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .st-done    { background: var(--green-bg); color: var(--green); }
+    .st-waiting { background: var(--amber-bg); color: var(--amber); }
+    .st-booked  { background: var(--blue-bg);  color: var(--blue); }
+    .st-cancel  { background: var(--red-bg);   color: var(--red); }
+
+    /* ── QUICK ACTIONS ── */
+    .qa-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 11px;
+    }
+    .qa-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.22s;
+        text-align: left;
+    }
+    .qa-btn:hover { background: var(--purple-pale); border-color: var(--purple-light); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(124,58,237,0.12); }
+    .qa-icon {
+        width: 42px; height: 42px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+    }
+    .qa-label { font-size: 13px; font-weight: 800; color: var(--text1); }
+    .qa-sub   { font-size: 11px; font-weight: 600; color: var(--text3); margin-top: 1px; }
+
+    /* ── EMERGENCY ── */
+    .emg-list { display: flex; flex-direction: column; gap: 10px; }
+    .emg-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-left: 4px solid var(--red);
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+    .emg-item:hover { background: #fff5f5; }
+    .emg-item.resolved { border-left-color: var(--green); opacity: 0.65; }
+    .emg-pulse {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--red);
+        box-shadow: 0 0 10px var(--red);
+        flex-shrink: 0;
+        animation: pulse 1.2s ease infinite;
+    }
+    .emg-item.resolved .emg-pulse { background: var(--green); box-shadow: 0 0 10px var(--green); animation: none; }
+    .emg-body { flex: 1; }
+    .emg-title { font-size: 13px; font-weight: 800; color: var(--text1); }
+    .emg-meta  { font-size: 11px; font-weight: 600; color: var(--text3); margin-top: 2px; }
+    .emg-badge {
+        font-size: 10px; font-weight: 800;
+        padding: 3px 10px; border-radius: 20px; flex-shrink: 0;
+    }
+    .eb-critical { background: var(--red-bg); color: var(--red); }
+    .eb-resolved { background: var(--green-bg); color: var(--green); }
+
+    /* ── BILLING ── */
+    .bill-list { display: flex; flex-direction: column; gap: 9px; }
+    .bill-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+    .bill-row:hover { background: #fff; border-color: var(--purple-light); }
+    .bill-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .bd-paid   { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .bd-unpaid { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .bd-overdue{ background: var(--red);   box-shadow: 0 0 8px var(--red); animation: pulse 1.5s infinite; }
+    .bill-info { flex: 1; }
+    .bill-name    { font-size: 13px; font-weight: 800; color: var(--text1); }
+    .bill-service { font-size: 11px; font-weight: 600; color: var(--text3); }
+    .bill-amount  { font-size: 14px; font-weight: 900; }
+    .ba-paid   { color: var(--green); }
+    .ba-unpaid { color: var(--amber); }
+    .ba-overdue{ color: var(--red); }
+
+    /* ── DOCTORS ── */
+    .doc-list { display: flex; flex-direction: column; gap: 9px; }
+    .doc-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 14px;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+    .doc-row:hover { background: #fff; border-color: var(--purple-light); }
+    .doc-av {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--purple), var(--indigo));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .doc-info { flex: 1; }
+    .doc-name  { font-size: 13px; font-weight: 800; color: var(--text1); }
+    .doc-dept  { font-size: 11px; font-weight: 600; color: var(--text3); margin-top: 1px; }
+    .doc-queue { font-size: 11px; font-weight: 700; color: var(--text3); flex-shrink: 0; }
+    .doc-pill  { font-size: 10px; font-weight: 800; padding: 3px 11px; border-radius: 20px; flex-shrink: 0; }
+    .dp-avail  { background: var(--green-bg);  color: var(--green); }
+    .dp-break  { background: var(--amber-bg);  color: var(--amber); }
+    .dp-off    { background: #f1f5f9; color: #94a3b8; }
+
+    /* ── ACTIVITY LOG ── */
+    .log-list { display: flex; flex-direction: column; gap: 0; max-height: 300px; overflow-y: auto; }
+    .log-list::-webkit-scrollbar { width: 4px; }
+    .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .log-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .log-msg  { font-size: 12.5px; font-weight: 600; color: var(--text2); flex: 1; line-height: 1.5; }
+    .log-time { font-size: 11px; font-weight: 700; color: var(--text3); flex-shrink: 0; margin-top: 2px; }
+
+    /* ── MODAL ── */
+    .overlay {
+        position: fixed; inset: 0;
+        background: rgba(79,46,170,0.35);
+        backdrop-filter: blur(6px);
+        z-index: 9000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal {
+        background: #fff;
+        border-radius: 20px;
+        width: 100%; max-width: 460px;
+        box-shadow: 0 30px 80px rgba(79,46,170,0.3);
+        animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        overflow: hidden;
+    }
+    @keyframes popIn { from{opacity:0;transform:scale(0.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    .modal-head {
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        background: linear-gradient(90deg, var(--purple-bg), #fff);
+    }
+    .modal-head h3 { font-size: 16px; font-weight: 900; color: var(--text1); }
+    .modal-x {
+        width: 30px; height: 30px;
+        background: var(--purple-pale);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--text2);
+        transition: all 0.2s;
+    }
+    .modal-x:hover { background: var(--red-bg); color: var(--red); }
+    .modal-body { padding: 20px 22px; }
+    .modal-foot { padding: 0 22px 20px; display: flex; gap: 10px; justify-content: flex-end; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+        font-size: 11px; font-weight: 800; color: var(--text3);
+        text-transform: uppercase; letter-spacing: 0.5px;
+        display: block; margin-bottom: 6px;
+    }
+    .form-ctrl {
+        width: 100%;
+        background: var(--purple-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 13px;
+        font-size: 13px; font-weight: 600;
+        color: var(--text1);
+        font-family: 'Nunito', sans-serif;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .form-ctrl:focus { border-color: var(--purple-light); box-shadow: 0 0 0 3px var(--purple-pale); }
+    .form-ctrl::placeholder { color: var(--text3); font-weight: 600; }
+    .form-ctrl option { background: #fff; }
+    textarea.form-ctrl { resize: vertical; min-height: 78px; }
+
+    .btn-main {
+        background: linear-gradient(135deg, var(--purple), var(--indigo));
+        color: #fff; border: none;
+        border-radius: 10px; padding: 10px 22px;
+        font-size: 13px; font-weight: 800;
+        cursor: pointer; font-family: 'Nunito', sans-serif;
+        transition: all 0.2s;
+    }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff; border: none;
+        border-radius: 10px; padding: 10px 22px;
+        font-size: 13px; font-weight: 800;
+        cursor: pointer; font-family: 'Nunito', sans-serif;
+        transition: all 0.2s;
+    }
+    .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239,68,68,0.35); }
+    .btn-sec {
+        background: var(--purple-pale); color: var(--purple);
+        border: 1.5px solid var(--border);
+        border-radius: 10px; padding: 10px 20px;
+        font-size: 13px; font-weight: 800;
+        cursor: pointer; font-family: 'Nunito', sans-serif;
+        transition: all 0.2s;
+    }
+    .btn-sec:hover { background: var(--purple-bg); }
+
+    /* ── TOAST ── */
+    .toast-area {
+        position: fixed; top: 74px; right: 20px;
+        z-index: 9999; display: flex; flex-direction: column; gap: 9px;
+        pointer-events: none;
+    }
+    .toast {
+        display: flex; align-items: center; gap: 12px;
+        padding: 13px 17px;
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        min-width: 290px; max-width: 360px;
+        box-shadow: 0 10px 32px rgba(124,58,237,0.18);
+        animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+        pointer-events: all;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(36px)} to{opacity:1;transform:translateX(0)} }
+    .toast.out { animation: toastOut 0.25s ease forwards; }
+    @keyframes toastOut { to{opacity:0;transform:translateX(36px)} }
+    .toast-ico { font-size: 22px; flex-shrink: 0; }
+    .toast-body { flex: 1; }
+    .toast-title { font-size: 13px; font-weight: 800; color: var(--text1); }
+    .toast-msg   { font-size: 12px; font-weight: 600; color: var(--text2); margin-top: 1px; }
+    .toast-x { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; flex-shrink: 0; }
+    .toast.tg { border-left: 4px solid var(--green); }
+    .toast.tp { border-left: 4px solid var(--purple); }
+    .toast.ta { border-left: 4px solid var(--amber); }
+    .toast.tr { border-left: 4px solid var(--red); }
+    </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-area" id="toastArea"></div>
+
+<!-- MODALS -->
+<div class="overlay" id="apptModal">
+    <div class="modal">
+        <div class="modal-head">
+            <h3>📋 Offline Appointment Booking</h3>
+            <div class="modal-x" onclick="closeModal('apptModal')">✕</div>
+        </div>
+        <form method="POST" action="/staff/book-appointment">
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Patient Username</label>
+                <input class="form-ctrl" type="text" name="username" placeholder="Enter patient username..." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Doctor</label>
+                <select class="form-ctrl" name="doctor" required>
+                    <option value="">Select doctor...</option>
+                    {% for d in doctors %}
+                    <option value="{{ d.name }}">{{ d.name }} — {{ d.department }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Date</label>
+                    <input class="form-ctrl" type="date" name="date" required>
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Time</label>
+                    <input class="form-ctrl" type="time" name="time" min="09:00" max="21:00" required>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn-sec" onclick="closeModal('apptModal')">Cancel</button>
+            <button type="submit" class="btn-main">Book Appointment</button>
+        </div>
+        </form>
+    </div>
+</div>
+
+<div class="overlay" id="billModal">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-head">
+            <h3>💳 Generate Bill</h3>
+            <div class="modal-x" onclick="closeModal('billModal')">✕</div>
+        </div>
+        <form method="POST" action="/staff/generate-bill" id="billForm">
+        <input type="hidden" name="prescription_id" id="bill_prescription_id">
+        <div class="modal-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <div>
+                    <div class="form-label">Patient</div>
+                    <div id="bill_patient_name" style="font-size:14px;font-weight:800;color:var(--text1);"></div>
+                    <div id="bill_patient_user" style="font-size:11px;color:var(--text3);"></div>
+                </div>
+                <div>
+                    <div class="form-label">Doctor</div>
+                    <div id="bill_doctor" style="font-size:14px;font-weight:700;color:var(--text2);"></div>
+                    <div id="bill_date" style="font-size:11px;color:var(--text3);"></div>
+                </div>
+            </div>
+
+            <div class="form-label" style="margin-bottom:8px;">Medicines &amp; Pricing</div>
+            <table style="width:100%;border-collapse:collapse;" id="medTable">
+                <thead>
+                    <tr>
+                        <th style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;padding:0 0 8px;text-align:left;border-bottom:2px solid var(--border);">Medicine</th>
+                        <th style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;padding:0 8px 8px;text-align:center;border-bottom:2px solid var(--border);width:70px;">Qty</th>
+                        <th style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;padding:0 0 8px;text-align:right;border-bottom:2px solid var(--border);width:100px;">Unit Price ₹</th>
+                    </tr>
+                </thead>
+                <tbody id="medTableBody"></tbody>
+            </table>
+
+            <div style="margin-top:14px;padding:12px 14px;background:var(--purple-bg);border-radius:10px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:800;color:var(--text2);">Total Amount</span>
+                <span id="bill_total" style="font-size:20px;font-weight:900;color:var(--purple);">₹0</span>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;margin-bottom:0;">
+                <label class="form-label">Notes (optional)</label>
+                <textarea class="form-ctrl" name="notes" placeholder="Additional billing notes..." style="min-height:56px;"></textarea>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn-sec" onclick="closeModal('billModal')">Cancel</button>
+            <button type="submit" class="btn-main">💳 Send Bill to Patient</button>
+        </div>
+        </form>
+    </div>
+</div>
+
+<div class="overlay" id="emgModal">
+    <div class="modal">
+        <div class="modal-head">
+            <h3>🚑 Log Emergency</h3>
+            <div class="modal-x" onclick="closeModal('emgModal')">✕</div>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Patient / Caller Name</label>
+                <input class="form-ctrl" type="text" placeholder="Name...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Emergency Type</label>
+                <select class="form-ctrl">
+                    <option>Cardiac Arrest</option>
+                    <option>Trauma / Injury</option>
+                    <option>Respiratory Distress</option>
+                    <option>Ambulance Request</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin:0">
+                <label class="form-label">Notes</label>
+                <textarea class="form-ctrl" placeholder="Additional details..."></textarea>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn-sec" onclick="closeModal('emgModal')">Cancel</button>
+            <button class="btn-danger" onclick="submitEmg()">🚨 Dispatch</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+    <div class="topbar-brand">
+        <div class="brand-icon">🏥</div>
+        <div>
+            <div class="brand-name">MedCore</div>
+            <div class="brand-sub">STAFF PORTAL</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="live-pill">
+            <div class="live-dot"></div>
+            LIVE
+        </div>
+        <div class="topbar-clock" id="clockEl">--:--:--</div>
+        <button class="top-icon-btn">
+            🔔
+            <span class="notif-badge">3</span>
+        </button>
+        <button class="top-icon-btn">👤</button>
+        <button class="logout-btn" onclick="window.location='/logout'">Logout</button>
+    </div>
+</header>
+
+<!-- ── WELCOME BANNER ── -->
+<div class="welcome-banner" style="margin:20px 24px 0;">
+    <div class="welcome-text">
+        <h2>🏥 Welcome, {{ staff_username }}</h2>
+        <p>Hospital Management System — Staff Command Center · {{ today_date }}</p>
+    </div>
+    <div class="welcome-emoji">👋</div>
+</div>
+
+<!-- ── PAGE ── -->
+<div class="page">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for category, message in messages %}
+        <div style="padding:12px 18px;border-radius:12px;font-size:13px;font-weight:700;
+            background:{% if category=='success' %}var(--green-bg){% else %}var(--red-bg){% endif %};
+            color:{% if category=='success' %}var(--green){% else %}var(--red){% endif %};
+            border:1.5px solid {% if category=='success' %}var(--green){% else %}var(--red){% endif %};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- STATS -->
+    <div>
+        <div class="section-label">Overview</div>
+        <div style="height:8px"></div>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--purple-pale);">📋</div>
+                <div class="stat-value" id="sv-appt">{{ total_today }}</div>
+                <div class="stat-label">Appointments Today</div>
+                <div class="stat-delta d-neu">Live</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--green-bg);">✅</div>
+                <div class="stat-value" id="sv-comp">{{ completed_today }}</div>
+                <div class="stat-label">Completed</div>
+                <div class="stat-delta d-up">Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--amber-bg);">⏳</div>
+                <div class="stat-value" id="sv-pend">{{ waiting_today }}</div>
+                <div class="stat-label">Pending</div>
+                <div class="stat-delta d-neu">Waiting</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--red-bg);">🚑</div>
+                <div class="stat-value" id="sv-emg" style="color:var(--red);">{{ emergencies|length }}</div>
+                <div class="stat-label">Emergencies</div>
+                <div class="stat-delta d-down">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--blue-bg);">💳</div>
+                <div class="stat-value">{{ pending_billing|length }}</div>
+                <div class="stat-label">Pending Bills</div>
+                <div class="stat-delta d-neu">Awaiting</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--cyan-bg);">👨‍⚕️</div>
+                <div class="stat-value" style="color:var(--green);">{{ available_docs }}</div>
+                <div class="stat-label">Doctors Available</div>
+                <div class="stat-delta d-up">
+                    <span style="background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:12px;font-size:10px;font-weight:800;">● Live</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPOINTMENTS + QUICK ACTIONS -->
+    <div class="two-col">
+        <!-- Appointments -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--purple-pale);">📋</div>
+                    Today's Appointments
+                </div>
+                <button class="action-pill ap-purple" onclick="openModal('apptModal')">+ New</button>
+            </div>
+            <div class="card-body">
+                <div class="search-wrap">
+                    <span style="color:var(--text3);font-size:15px;">🔍</span>
+                    <input placeholder="Search patient or doctor…" oninput="filterAppts(this.value)">
+                </div>
+                <table class="appt-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apptTbody">
+                        {% for a in appointments %}
+                        {% set initials = (a.patient_name.split()[0][0] + a.patient_name.split()[-1][0]) if a.patient_name and ' ' in a.patient_name else a.patient_name[:2] %}
+                        {% set av_colors = ['av-a','av-b','av-c','av-d','av-e'] %}
+                        <tr data-id="{{ a.id }}">
+                            <td>
+                                <div class="pat-cell">
+                                    <div class="pat-av {{ av_colors[loop.index0 % 5] }}">{{ initials|upper }}</div>
+                                    <div>
+                                        <div class="pat-name">{{ a.patient_name }}</div>
+                                        <div class="pat-id">{{ a.username }}{% if a.source == 'offline' %} · <span style="color:var(--amber);font-size:10px;">Walk-in</span>{% endif %}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-size:12px;font-weight:700;color:var(--text2);">{{ a.doctor }}</td>
+                            <td style="font-size:12px;font-weight:700;color:var(--text2);">{{ a.time }}</td>
+                            <td>
+                                {% if a.status == 'Completed' %}
+                                    <span class="status-pill st-done"><span class="sp-dot"></span>Completed</span>
+                                {% elif a.status == 'Cancelled' %}
+                                    <span class="status-pill st-cancel"><span class="sp-dot"></span>Cancelled</span>
+                                {% elif a.status == 'Rescheduled' %}
+                                    <span class="status-pill st-waiting"><span class="sp-dot"></span>Rescheduled</span>
+                                {% else %}
+                                    <span class="status-pill st-booked"><span class="sp-dot"></span>{{ a.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px;">No appointments today</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--purple-pale);">⚡</div>
+                    Quick Actions
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="qa-grid">
+                    <div class="qa-btn" onclick="openModal('apptModal')">
+                        <div class="qa-icon" style="background:var(--purple-pale);">📋</div>
+                        <div><div class="qa-label">Book Appointment</div><div class="qa-sub">Schedule a new visit</div></div>
+                    </div>
+                    <div class="qa-btn" onclick="openModal('billModal')">
+                        <div class="qa-icon" style="background:var(--green-bg);">💳</div>
+                        <div><div class="qa-label">Generate Bill</div><div class="qa-sub">Create & send invoice</div></div>
+                    </div>
+                    <div class="qa-btn" onclick="openModal('emgModal')">
+                        <div class="qa-icon" style="background:var(--red-bg);">🚑</div>
+                        <div><div class="qa-label">Log Emergency</div><div class="qa-sub">Dispatch ambulance</div></div>
+                    </div>
+                    <div class="qa-btn" onclick="showToast('📝','Note Added','Patient note saved successfully.','ta')">
+                        <div class="qa-icon" style="background:var(--amber-bg);">📝</div>
+                        <div><div class="qa-label">Patient Note</div><div class="qa-sub">Add clinical note</div></div>
+                    </div>
+                    <div class="qa-btn" onclick="showToast('🔬','Lab Requested','Lab test request sent.','tp')">
+                        <div class="qa-icon" style="background:var(--cyan-bg);">🔬</div>
+                        <div><div class="qa-label">Lab Request</div><div class="qa-sub">Order a test</div></div>
+                    </div>
+                    <div class="qa-btn" onclick="showToast('🛏️','Bed Assigned','Bed allocation updated.','tg')">
+                        <div class="qa-icon" style="background:var(--blue-bg);">🛏️</div>
+                        <div><div class="qa-label">Assign Bed</div><div class="qa-sub">Allocate ward bed</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMERGENCY + BILLING -->
+    <div class="two-col">
+        <!-- Emergency -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--red-bg);">🚑</div>
+                    Emergency / Ambulance Feed
+                </div>
+                <button class="action-pill ap-red" onclick="openModal('emgModal')">+ Log</button>
+            </div>
+            <div class="card-body">
+                <div class="emg-list" id="emgList">
+                    {% for e in emergencies %}
+                    <div class="emg-item {% if e.status == 'resolved' %}resolved{% endif %}" id="emg-{{ e.id }}">
+                        <div class="emg-pulse"></div>
+                        <div class="emg-body">
+                            <div class="emg-title">{{ e.get('reason', 'Ambulance Request') }}</div>
+                            <div class="emg-meta">{{ e.get('patient_username','Unknown') }} · {{ e.get('location','') }} · {{ e.get('created_at','').strftime('%I:%M %p') if e.get('created_at') else '' }}</div>
+                        </div>
+                        {% if e.status == 'resolved' %}
+                            <span class="emg-badge eb-resolved">RESOLVED</span>
+                        {% elif e.status == 'dispatched' %}
+                            <span class="emg-badge" style="background:var(--amber-bg);color:var(--amber);">DISPATCHED</span>
+                            <button onclick="updateEmg('{{ e.id }}','resolved')" style="margin-left:6px;background:var(--green-bg);color:var(--green);border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">✓ Resolved</button>
+                        {% else %}
+                            <span class="emg-badge eb-critical">PENDING</span>
+                            <button onclick="updateEmg('{{ e.id }}','dispatched')" style="margin-left:6px;background:var(--amber-bg);color:var(--amber);border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">🚑 Dispatch</button>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">No active emergencies</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--amber-bg);">💳</div>
+                    Prescriptions Pending Billing
+                    {% if pending_billing %}
+                    <span style="background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;margin-left:6px;">{{ pending_billing|length }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="bill-list">
+                    {% for p in pending_billing %}
+                    <div class="bill-row">
+                        <div class="bill-dot bd-unpaid"></div>
+                        <div class="bill-info">
+                            <div class="bill-name">{{ p.get('patient_name', p.get('patient_username','')) }}</div>
+                            <div class="bill-service">Dr. {{ p.get('doctor','') }} · {{ p.get('date','') }}</div>
+                            <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+                                {% set meds = p.get('medicines', '') %}
+                                {% if meds is string %}
+                                    {{ meds[:80] }}{% if meds|length > 80 %}…{% endif %}
+                                {% elif meds is iterable %}
+                                    {{ meds | join(', ') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button class="action-pill ap-amber" style="font-size:11px;flex-shrink:0;"
+                            data-pid="{{ p.id }}"
+                            data-pname="{{ p.get('patient_name', p.get('patient_username','')) }}"
+                            data-puser="{{ p.get('patient_username','') }}"
+                            data-doctor="Dr. {{ p.get('doctor','') }}"
+                            data-date="{{ p.get('date','') }}"
+                            data-meds="{{ p.get('medicines', '') if p.get('medicines', '') is string else p.get('medicines', []) | join(',') }}"
+                            onclick="openBillModalFromBtn(this)">Bill</button>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">No prescriptions pending billing</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCTORS + ACTIVITY LOG -->
+    <div class="two-col">
+
+    <!-- PAYMENT VERIFICATION -->
+    {% if pending_payments %}
+    <div class="card" style="margin-bottom:18px;">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="card-title-icon" style="background:var(--green-bg);">💰</div>
+                Payment Verification
+                <span style="background:var(--red-bg);color:var(--red);font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;margin-left:6px;">{{ pending_payments|length }} pending</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% for b in pending_payments %}
+            <div style="background:var(--purple-bg);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:800;color:var(--text1);">{{ b.get('patient_name', b.get('patient_username','')) }}</div>
+                        <div style="font-size:11px;color:var(--text3);">Dr. {{ b.get('doctor','') }} · ₹{{ "%.2f"|format(b.get('total_amount',0)) }}</div>
+                    </div>
+                    <span style="background:var(--amber-bg);color:var(--amber);font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">⏳ Awaiting Verification</span>
+                </div>
+                {% if b.get('payment_screenshot') %}
+                <a href="{{ b.payment_screenshot }}" target="_blank"
+                    style="display:inline-block;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--purple);text-decoration:none;background:var(--purple-pale);padding:5px 12px;border-radius:8px;">
+                    🖼️ View Payment Screenshot
+                </a>
+                {% endif %}
+                <div style="display:flex;gap:8px;">
+                    <form method="POST" action="/staff/verify-payment/{{ b.id }}" style="flex:1;">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">
+                            ✅ Verify & Mark Paid
+                        </button>
+                    </form>
+                    <form method="POST" action="/staff/verify-payment/{{ b.id }}" style="flex:1;">
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit" style="width:100%;background:var(--red-bg);color:var(--red);border:1.5px solid var(--red);border-radius:8px;padding:8px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">
+                            ❌ Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- DOCTORS + ACTIVITY LOG -->
+    <div class="two-col">
+        <!-- Doctors -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--green-bg);">👨‍⚕️</div>
+                    Doctor Availability
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="doc-list">
+                    {% for d in doctors %}
+                    <div class="doc-row">
+                        <div class="doc-av">👨‍⚕️</div>
+                        <div class="doc-info">
+                            <div class="doc-name">{{ d.name }}</div>
+                            <div class="doc-dept">{{ d.department }}</div>
+                        </div>
+                        <div class="doc-queue">Queue: {{ d.queue }}</div>
+                        {% if d.status == 'available' %}
+                            <span class="doc-pill dp-avail">Available</span>
+                        {% elif d.status == 'on_break' %}
+                            <span class="doc-pill dp-break">On Break</span>
+                        {% elif d.status == 'on_leave' %}
+                            <span class="doc-pill" style="background:var(--amber-bg);color:var(--amber);">On Leave</span>
+                        {% else %}
+                            <span class="doc-pill dp-off">Offline</span>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">No doctors found</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon" style="background:var(--blue-bg);">📜</div>
+                    Activity Log
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="log-list" id="logList">
+                    {% for a in appointments[:7] %}
+                    <div class="log-item">
+                        <div class="log-dot" style="background:
+                            {% if a.status == 'Completed' %}var(--green)
+                            {% elif a.status == 'Cancelled' %}var(--red)
+                            {% else %}var(--purple){% endif %}"></div>
+                        <div class="log-msg">
+                            <b>{{ a.patient_name }}</b> — {{ a.doctor }}
+                            <span style="color:var(--text3);">({{ a.status }})</span>
+                        </div>
+                        <div class="log-time">{{ a.time }}</div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">No activity today</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* Clock */
+function tick(){
+    document.getElementById('clockEl').textContent =
+        new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+tick(); setInterval(tick,1000);
+
+/* Modal */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
+});
+document.addEventListener('keydown', e => {
+    if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'));
+});
+
+/* Toast */
+let tid=0;
+function showToast(icon,title,msg,cls='tp'){
+    const area=document.getElementById('toastArea');
+    const id=++tid;
+    const t=document.createElement('div');
+    t.className='toast '+cls;
+    t.dataset.id=id;
+    t.innerHTML=`<span class="toast-ico">${icon}</span>
+        <div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>
+        <button class="toast-x" onclick="rmToast(${id})">✕</button>`;
+    area.appendChild(t);
+    setTimeout(()=>rmToast(id),4500);
+}
+function rmToast(id){
+    const t=document.querySelector(`[data-id="${id}"]`);
+    if(!t)return;
+    t.classList.add('out');
+    setTimeout(()=>t.remove(),260);
+}
+
+/* Billing modal — open with prescription data */
+function openBillModalFromBtn(btn){
+    const prescId    = btn.dataset.pid;
+    const patName    = btn.dataset.pname;
+    const patUser    = btn.dataset.puser;
+    const doctor     = btn.dataset.doctor;
+    const date       = btn.dataset.date;
+    const medsRaw    = btn.dataset.meds || '';
+
+    // Parse medicines — comma or newline separated string
+    const meds = medsRaw.split(/[\n,]+/).map(m=>m.trim()).filter(Boolean);
+
+    openBillModal(prescId, patName, patUser, doctor, date, meds);
+}
+
+function openBillModal(prescId, patientName, patientUser, doctor, date, meds){
+    document.getElementById('bill_prescription_id').value = prescId;
+    document.getElementById('bill_patient_name').textContent = patientName;
+    document.getElementById('bill_patient_user').textContent = patientUser;
+    document.getElementById('bill_doctor').textContent = doctor;
+    document.getElementById('bill_date').textContent = date;
+
+    const tbody = document.getElementById('medTableBody');
+    tbody.innerHTML = meds.map((med, i) => `
+        <tr>
+            <td style="padding:10px 0;font-size:13px;font-weight:600;color:var(--text1);border-bottom:1px solid var(--border);">
+                ${med}
+                <input type="hidden" name="med_name_${i}" value="${med}">
+            </td>
+            <td style="padding:10px 8px;border-bottom:1px solid var(--border);">
+                <input type="number" id="qty_${i}" name="med_qty_${i}" value="1" min="1"
+                    style="width:64px;text-align:center;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:8px;padding:6px 4px;font-size:14px;font-weight:700;font-family:Nunito,sans-serif;outline:none;color:#1e1b4b;"
+                    oninput="calcTotal(${meds.length})">
+            </td>
+            <td style="padding:10px 0;border-bottom:1px solid var(--border);">
+                <input type="number" id="price_${i}" name="med_price_${i}" value="0" min="0" step="0.01"
+                    style="width:100px;text-align:right;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:8px;padding:6px 8px;font-size:14px;font-weight:700;font-family:Nunito,sans-serif;outline:none;color:#1e1b4b;"
+                    oninput="calcTotal(${meds.length})">
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:16px;">No medicines listed</td></tr>';
+
+    // Store med count for form submission
+    document.getElementById('billForm').dataset.medCount = meds.length;
+    calcTotal(meds.length);
+    openModal('billModal');
+}
+
+function calcTotal(count){
+    let total = 0;
+    for(let i=0; i<count; i++){
+        const qty   = parseFloat(document.getElementById('qty_'   + i)?.value || 0);
+        const price = parseFloat(document.getElementById('price_' + i)?.value || 0);
+        total += qty * price;
+    }
+    document.getElementById('bill_total').textContent =
+        '₹' + total.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function submitEmg(){
+    closeModal('emgModal');
+    showToast('🚑','Emergency Logged','Dispatch team notified!','tr');
+    const el=document.getElementById('sv-emg');
+    if(el) el.textContent=parseInt(el.textContent)+1;
+}
+
+/* Log */
+function addLog(color,message){
+    const list=document.getElementById('logList');
+    if(!list) return;
+    const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+    const item=document.createElement('div');
+    item.className='log-item';
+    item.style.animation='cardIn 0.4s ease both';
+    item.innerHTML=`<div class="log-dot" style="background:${color}"></div>
+        <div class="log-msg">${message}</div>
+        <div class="log-time">${now}</div>`;
+    list.insertBefore(item,list.firstChild);
+}
+
+/* Emergency status update */
+function updateEmg(id, newStatus){
+    fetch('/staff/emergency/' + id + '/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: newStatus})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'ok'){
+            const item = document.getElementById('emg-' + id);
+            if(!item) return;
+            if(newStatus === 'resolved'){
+                item.classList.add('resolved');
+                item.querySelector('.emg-pulse').style.animation = 'none';
+                item.querySelector('.emg-pulse').style.background = 'var(--green)';
+                item.querySelectorAll('button, .emg-badge').forEach(b => b.remove());
+                const badge = document.createElement('span');
+                badge.className = 'emg-badge eb-resolved';
+                badge.textContent = 'RESOLVED';
+                item.appendChild(badge);
+                showToast('✅','Resolved','Emergency marked as resolved.','tg');
+            } else if(newStatus === 'dispatched'){
+                item.querySelectorAll('button, .emg-badge').forEach(b => b.remove());
+                const badge = document.createElement('span');
+                badge.className = 'emg-badge';
+                badge.style.cssText = 'background:var(--amber-bg);color:var(--amber);';
+                badge.textContent = 'DISPATCHED';
+                item.appendChild(badge);
+                const btn = document.createElement('button');
+                btn.textContent = '✓ Resolved';
+                btn.style.cssText = 'margin-left:6px;background:var(--green-bg);color:var(--green);border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;';
+                btn.onclick = () => updateEmg(id, 'resolved');
+                item.appendChild(btn);
+                showToast('🚑','Dispatched','Ambulance dispatched to patient.','ta');
+            }
+        }
+    })
+    .catch(() => showToast('⚠️','Error','Could not update status.','tr'));
+}
+
+/* Search */
+function filterAppts(q){
+    q=q.toLowerCase();
+    document.querySelectorAll('#apptTbody tr').forEach(r=>{
+        r.style.display=(!q||r.textContent.toLowerCase().includes(q))?'':'none';
+    });
+}
+
+/* Live polling — refresh appointments every 10 seconds */
+let lastApptCount = {{ appointments|length }};
+const avColors = ['av-a','av-b','av-c','av-d','av-e'];
+
+function statusPill(status){
+    if(status==='Completed') return `<span class="status-pill st-done"><span class="sp-dot"></span>Completed</span>`;
+    if(status==='Cancelled') return `<span class="status-pill st-cancel"><span class="sp-dot"></span>Cancelled</span>`;
+    if(status==='Rescheduled') return `<span class="status-pill st-waiting"><span class="sp-dot"></span>Rescheduled</span>`;
+    return `<span class="status-pill st-booked"><span class="sp-dot"></span>${status}</span>`;
+}
+
+function rebuildTable(appts){
+    const tbody = document.getElementById('apptTbody');
+    if(!tbody) return;
+    if(!appts.length){
+        tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px;">No appointments today</td></tr>';
+        return;
+    }
+    tbody.innerHTML = appts.map((a,i)=>{
+        const name = a.patient_name || a.username || 'Unknown';
+        const parts = name.trim().split(' ');
+        const initials = parts.length>1 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+        const av = avColors[i%5];
+        const walkIn = a.source==='offline' ? ' · <span style="color:var(--amber);font-size:10px;">Walk-in</span>' : '';
+        return `<tr data-id="${a.id}" style="animation:cardIn 0.4s ease both">
+            <td><div class="pat-cell"><div class="pat-av ${av}">${initials}</div>
+            <div><div class="pat-name">${name}</div><div class="pat-id">${a.username}${walkIn}</div></div></div></td>
+            <td style="font-size:12px;font-weight:700;color:var(--text2);">${a.doctor}</td>
+            <td style="font-size:12px;font-weight:700;color:var(--text2);">${a.time}</td>
+            <td>${statusPill(a.status)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function pollAppointments(){
+    fetch('/api/staff/appointments')
+        .then(r=>r.json())
+        .then(data=>{
+            const appts = data.appointments || [];
+            const total = appts.length;
+            const completed = appts.filter(a=>a.status==='Completed').length;
+            const waiting = appts.filter(a=>['Booked','Rescheduled'].includes(a.status)).length;
+            document.getElementById('sv-appt').textContent = total;
+            document.getElementById('sv-comp').textContent = completed;
+            document.getElementById('sv-pend').textContent = waiting;
+            if(total !== lastApptCount){
+                if(total > lastApptCount) showToast('📋','New Appointment','A new appointment was just booked.','tp');
+                lastApptCount = total;
+                rebuildTable(appts);
+            }
+        })
+        .catch(()=>{});
+}
+
+setInterval(pollAppointments, 10000);
+</script>
+</body>
+</html>

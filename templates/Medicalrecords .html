@@ -1,0 +1,75 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div class="header">🗂️ Medical Records — {{ patient.name }}</div>
+    <div style="display:flex; gap:10px;">
+        <a href="/patient/{{ patient.username }}" style="background:#ddd; color:#333; padding:10px 20px; border-radius:10px; font-weight:700; text-decoration:none;">⬅ Back to Dashboard</a>
+        <a href="/logout" style="background:linear-gradient(135deg,#e53935,#c62828); color:white; padding:10px 20px; border-radius:10px; font-weight:700; text-decoration:none;">Logout</a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="flash {{ category }}">{{ message }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div style="background:white; padding:30px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <h3 style="color:#333; margin-bottom:25px; font-size:24px; font-weight:700;">💊 Prescriptions Received</h3>
+
+    {% if prescriptions %}
+    {% for rx in prescriptions %}
+    <div style="background:linear-gradient(135deg,#f1f8e9,#dcedc8); border-left:5px solid #43a047; padding:22px; border-radius:14px; margin-bottom:18px; transition:all 0.3s ease;">
+
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <span style="background:linear-gradient(135deg,#43a047,#2e7d32); color:white; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700;">💊 Prescription</span>
+                <span style="background:#fff; color:#555; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid #ddd;">📅 {{ rx.date }} at {{ rx.time }}</span>
+            </div>
+            <span style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700;">👨‍⚕️ Dr. {{ rx.doctor_name }}</span>
+        </div>
+
+        {% if rx.doctor_department %}
+        <p style="color:#555; font-size:13px; font-weight:600; margin-bottom:14px;">🏥 {{ rx.doctor_department }}</p>
+        {% endif %}
+
+        <div style="background:white; padding:14px; border-radius:10px; margin-bottom:10px;">
+            <b style="color:#2e7d32; font-size:14px;">💊 Medicines &amp; Dosage:</b>
+            <pre style="margin:8px 0 0 0; font-family:inherit; font-size:14px; color:#333; white-space:pre-wrap; word-break:break-word; line-height:1.7;">{{ rx.medicines }}</pre>
+        </div>
+
+        {% if rx.notes %}
+        <div style="background:#fff9c4; padding:12px; border-radius:10px; border-left:3px solid #FFC107;">
+            <b style="color:#856404; font-size:14px;">📝 Doctor's Notes:</b>
+            <p style="margin:8px 0 0 0; color:#333; font-size:14px; line-height:1.6;">{{ rx.notes }}</p>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div style="text-align:center; padding:60px 20px; color:#999; font-size:18px; font-weight:600;">
+        📋 No prescriptions received yet.<br>
+        <span style="font-size:14px; color:#bbb; font-weight:400;">Prescriptions sent by your doctor will appear here.</span>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .flash { padding:14px 18px; border-radius:10px; margin-bottom:15px; font-size:18px; font-weight:600; color:white; }
+    .flash.success { background:#4CAF50; }
+    .flash.error { background:#F44336; }
+    .flash.warning { background:#FF9800; }
+    .header { font-size:28px; font-weight:700; }
+
+    div[style*="border-left:5px solid #43a047"]:hover {
+        transform: translateX(5px);
+        box-shadow: 0 8px 24px rgba(67,160,71,0.2);
+    }
+</style>
+
+{% endblock %}
