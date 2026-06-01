@@ -1,7 +1,7 @@
 ﻿from pymongo import MongoClient
 
 client = MongoClient("mongodb://localhost:27017/")
-db = client["digital_hospital_queue"]
+db = client["digital_Management"]
 
 patients_col      = db["patients"]
 doctors_col       = db["doctors"]

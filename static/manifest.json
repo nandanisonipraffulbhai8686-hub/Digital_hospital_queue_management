@@ -1,0 +1,26 @@
+{
+  "name": "Ever Well Hospital",
+  "short_name": "Ever Well",
+  "description": "Digital Hospital Queue Management System",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#6C63FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical"],
+  "screenshots": []
+}

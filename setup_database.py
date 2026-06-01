@@ -315,9 +315,9 @@ print(f"✓ Added {len(staff)} staff members")
 # ==================== HOSPITAL DATA ====================
 print("Adding Hospital data...")
 hospitals = [
-    {"name": "City Heart Hospital",        "disease": "Cardiology",       "specialty": "Cardiology",       "distance": "1.2 km"},
-    {"name": "City Heart Hospital",        "disease": "Cardiac",          "specialty": "Cardiology",       "distance": "1.2 km"},
-    {"name": "City Heart Hospital",        "disease": "Heart",            "specialty": "Cardiology",       "distance": "1.2 km"},
+    {"name": "Ever Well Hospital",        "disease": "Cardiology",       "specialty": "Cardiology",       "distance": "1.2 km"},
+    {"name": "Ever Well Hospital",        "disease": "Cardiac",          "specialty": "Cardiology",       "distance": "1.2 km"},
+    {"name": "Ever Well Hospital",        "disease": "Heart",            "specialty": "Cardiology",       "distance": "1.2 km"},
     {"name": "Apollo Children's Hospital", "disease": "Pediatrics",       "specialty": "Pediatrics",       "distance": "2.5 km"},
     {"name": "Apollo Children's Hospital", "disease": "Child",            "specialty": "Pediatrics",       "distance": "2.5 km"},
     {"name": "Central Medical Centre",     "disease": "General Medicine", "specialty": "General Medicine", "distance": "0.8 km"},

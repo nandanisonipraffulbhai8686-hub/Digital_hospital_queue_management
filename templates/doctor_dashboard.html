@@ -1,1463 +1,733 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-    <title>Doctor Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-    :root[data-theme="dark"] {
-      --bg: linear-gradient(135deg, #0f0a2e 0%, #1a1040 35%, #2d1b6e 70%, #1a1040 100%);
-      --surface: rgba(255,255,255,0.06);
-      --surface-hover: rgba(255,255,255,0.12);
-      --border: rgba(255,255,255,0.1);
-      --border-strong: rgba(255,255,255,0.2);
-      --card-bg: rgba(20,15,55,0.85);
-      --card-border: rgba(124,111,205,0.25);
-      --text-primary: #e8e4ff;
-      --text-secondary: #9b97c8;
-      --text-muted: #6b6899;
-      --accent: #7c6fcd;
-      --accent-glow: rgba(124,111,205,0.4);
-      --overview-bg: rgba(255,255,255,0.08);
-      --overview-hover: rgba(255,255,255,0.16);
-      --table-head: linear-gradient(135deg,#4840a0,#6b5fe8);
-      --table-row-hover: rgba(124,111,205,0.12);
-      --input-bg: rgba(255,255,255,0.07);
-      --input-border: rgba(124,111,205,0.3);
-      --input-focus: rgba(124,111,205,0.5);
-      --queue-bg: rgba(20,15,55,0.9);
-      --header-bg: rgba(255,255,255,0.08);
-      --badge-text: #fff;
-      --topbar-text: #fff;
-    }
-    :root[data-theme="light"] {
-      --bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #5a4fcf 100%);
-      --surface: rgba(255,255,255,0.15);
-      --surface-hover: rgba(255,255,255,0.28);
-      --border: rgba(255,255,255,0.2);
-      --border-strong: rgba(255,255,255,0.35);
-      --card-bg: #ffffff;
-      --card-border: rgba(102,126,234,0.15);
-      --text-primary: #333;
-      --text-secondary: #555;
-      --text-muted: #888;
-      --accent: #667eea;
-      --accent-glow: rgba(102,126,234,0.3);
-      --overview-bg: rgba(255,255,255,0.18);
-      --overview-hover: rgba(255,255,255,0.3);
-      --table-head: linear-gradient(135deg,#667eea,#764ba2);
-      --table-row-hover: #f5f5f5;
-      --input-bg: rgba(255,255,255,0.9);
-      --input-border: #ddd;
-      --input-focus: #667eea;
-      --queue-bg: #fff;
-      --header-bg: rgba(255,255,255,0.15);
-      --badge-text: #fff;
-      --topbar-text: #fff;
-    }
-
-    * { margin:0; padding:0; box-sizing:border-box; }
-
-    body {
-      font-family:'Outfit',sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      min-height:100vh;
-      padding:20px;
-      transition: background 0.5s, color 0.3s;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    /* ── ANIMATED BACKGROUND ── */
-    #bgCanvas {
-      position: fixed; inset: 0; width: 100%; height: 100%;
-      z-index: 0; pointer-events: none;
-    }
-    .blobs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-    .blob { position: absolute; border-radius: 50%; filter: blur(80px); animation: blobDrift ease-in-out infinite alternate; }
-    .b1 { width:500px;height:500px;background:radial-gradient(circle,rgba(124,111,205,0.35),transparent 70%);top:-150px;left:-100px;animation-duration:15s; }
-    .b2 { width:400px;height:400px;background:radial-gradient(circle,rgba(90,79,207,0.3),transparent 70%);bottom:-80px;right:-80px;animation-duration:18s;animation-delay:-7s; }
-    .b3 { width:300px;height:300px;background:radial-gradient(circle,rgba(196,184,240,0.25),transparent 70%);top:45%;left:50%;animation-duration:12s;animation-delay:-3s; }
-    @keyframes blobDrift { from{transform:translate(0,0) scale(1);} to{transform:translate(50px,60px) scale(1.15);} }
-
-    .grid-ov {
-      position:fixed;inset:0;z-index:0;pointer-events:none;
-      background-image: linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
-      background-size: 50px 50px;
-      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
-    }
-
-    /* ── THEME TOGGLE ── */
-    .theme-toggle {
-      position: fixed; top: 22px; right: 24px; z-index: 9999;
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.3);
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(16px); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
-      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-      animation: floatBtn 3s ease-in-out infinite;
-    }
-    .theme-toggle:hover { transform: scale(1.15) translateY(-3px) !important; box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(196,184,240,0.4); border-color: rgba(255,255,255,0.6); animation: none; }
-    @keyframes floatBtn { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
-
-    /* ════════════════════════════════════════════════════
-       🔔 NOTIFICATION BELL — FLOATING ICON
-    ════════════════════════════════════════════════════ */
-    .notif-bell-btn {
-      position: fixed;
-      top: 22px;
-      right: 88px;
-      z-index: 9999;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.3);
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(16px);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
-      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-      animation: floatBtn 3s ease-in-out infinite 0.5s;
-      outline: none;
-    }
-    .notif-bell-btn:hover {
-      transform: scale(1.15) translateY(-3px) !important;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(255,193,7,0.5);
-      border-color: rgba(255,255,255,0.6);
-      animation: none;
-    }
-
-    /* ── Bell glow ring when new notification arrives ── */
-    .notif-bell-btn.has-new {
-      border-color: #4CAF50;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 3px rgba(76,175,80,0.5), 0 0 20px rgba(76,175,80,0.4);
-      animation: bellGlow 1.5s ease-in-out infinite;
-    }
-    @keyframes bellGlow {
-      0%,100% { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 3px rgba(76,175,80,0.4), 0 0 20px rgba(76,175,80,0.3); }
-      50%      { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 6px rgba(76,175,80,0.2), 0 0 35px rgba(76,175,80,0.5); }
-    }
-
-    /* Red badge counter on bell */
-    .notif-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: linear-gradient(135deg,#ff5252,#d32f2f);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 900;
-      min-width: 20px;
-      height: 20px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 5px;
-      border: 2px solid rgba(15,10,46,0.9);
-      box-shadow: 0 2px 8px rgba(255,82,82,0.6);
-      animation: badgeBounce 0.5s cubic-bezier(0.34,1.56,0.64,1);
-      pointer-events: none;
-    }
-    .notif-badge.hidden { display: none; }
-    @keyframes badgeBounce {
-      from { transform: scale(0); opacity: 0; }
-      to   { transform: scale(1); opacity: 1; }
-    }
-
-    /* ── Bell ring animation ── */
-    @keyframes bellRing {
-      0%   { transform: rotate(0deg) scale(1); }
-      8%   { transform: rotate(20deg) scale(1.15); }
-      16%  { transform: rotate(-18deg) scale(1.1); }
-      24%  { transform: rotate(15deg) scale(1.08); }
-      32%  { transform: rotate(-12deg) scale(1.05); }
-      40%  { transform: rotate(8deg) scale(1.03); }
-      48%  { transform: rotate(-5deg) scale(1.01); }
-      56%  { transform: rotate(3deg) scale(1); }
-      64%  { transform: rotate(-2deg) scale(1); }
-      100% { transform: rotate(0deg) scale(1); }
-    }
-    .bell-icon.ringing {
-      animation: bellRing 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
-      display: inline-block;
-      transform-origin: center top;
-    }
-
-    /* ── NOTIFICATION PANEL (slide-in drawer) ── */
-    .notif-panel {
-      position: fixed;
-      top: 0;
-      right: -420px;
-      width: min(400px, 95vw);
-      height: 100vh;
-      background: rgba(15,10,46,0.97);
-      backdrop-filter: blur(24px);
-      border-left: 1px solid rgba(124,111,205,0.35);
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      transition: right 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: -20px 0 60px rgba(0,0,0,0.6);
-    }
-    :root[data-theme="light"] .notif-panel {
-      background: rgba(255,255,255,0.97);
-      border-left: 1px solid rgba(102,126,234,0.2);
-    }
-    .notif-panel.open { right: 0; }
-
-    .notif-panel-header {
-      padding: 22px 24px 18px;
-      background: linear-gradient(135deg,#4840a0,#6b5fe8);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .notif-panel-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .notif-panel-title h3 {
-      color: #fff;
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0;
-    }
-    .notif-panel-title p {
-      color: rgba(255,255,255,0.75);
-      font-size: 12px;
-      margin: 3px 0 0;
-    }
-    .notif-panel-close {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      font-size: 18px;
-      font-weight: 700;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-      flex-shrink: 0;
-    }
-    .notif-panel-close:hover { background: rgba(255,255,255,0.38); transform: rotate(90deg); }
-
-    .notif-panel-actions {
-      padding: 12px 16px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      flex-shrink: 0;
-    }
-    .notif-action-btn {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: var(--text-secondary);
-      font-size: 12px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.25s;
-      font-family: 'Outfit', sans-serif;
-    }
-    .notif-action-btn:hover { background: rgba(255,255,255,0.16); color: var(--text-primary); }
-
-    .notif-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 16px;
-    }
-    .notif-list::-webkit-scrollbar { width: 5px; }
-    .notif-list::-webkit-scrollbar-thumb { background: linear-gradient(135deg,#667eea,#764ba2); border-radius: 4px; }
-
-    /* Individual notification card */
-    .notif-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 13px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      margin-bottom: 10px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.05);
-      transition: all 0.25s;
-      position: relative;
-      animation: notifSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
-    }
-    @keyframes notifSlideIn {
-      from { opacity:0; transform:translateX(30px); }
-      to   { opacity:1; transform:translateX(0); }
-    }
-    .notif-item:hover { background: rgba(255,255,255,0.1); border-color: rgba(124,111,205,0.3); transform: translateX(-3px); }
-    .notif-item.unread { border-left: 4px solid #4CAF50; background: rgba(76,175,80,0.08); }
-    .notif-item.unread:hover { background: rgba(76,175,80,0.14); }
-
-    .notif-icon-wrap {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-    .notif-icon-new    { background: rgba(76,175,80,0.2);  }
-    .notif-icon-cancel { background: rgba(244,67,54,0.2);  }
-    .notif-icon-resched{ background: rgba(33,150,243,0.2); }
-
-    .notif-body { flex: 1; min-width: 0; }
-    .notif-msg  { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.45; margin-bottom: 5px; }
-    .notif-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .notif-time  { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-    .notif-token {
-      font-size: 11px; font-weight: 800;
-      background: linear-gradient(135deg,#667eea,#764ba2);
-      color: #fff;
-      padding: 2px 9px;
-      border-radius: 20px;
-    }
-
-    .notif-unread-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #4CAF50;
-      flex-shrink: 0;
-      margin-top: 6px;
-      box-shadow: 0 0 6px #4CAF50;
-      animation: pulseDot 2s infinite;
-    }
-    .notif-dismiss-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 14px;
-      padding: 2px 5px;
-      border-radius: 6px;
-      transition: all 0.2s;
-      flex-shrink: 0;
-      line-height: 1;
-      margin-top: 2px;
-    }
-    .notif-dismiss-btn:hover { color: #F44336; background: rgba(244,67,54,0.12); }
-
-    .notif-empty {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-    }
-    .notif-empty .notif-empty-icon { font-size: 52px; margin-bottom: 14px; opacity: 0.5; }
-    .notif-empty p { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .notif-empty small { font-size: 13px; opacity: 0.7; }
-
-    /* Overlay backdrop */
-    .notif-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 9999;
-      display: none;
-      backdrop-filter: blur(3px);
-    }
-    .notif-overlay.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-
-    /* ── Toast popup for NEW appointment ── */
-    .notif-toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%) translateY(120px);
-      z-index: 10001;
-      background: linear-gradient(135deg,rgba(20,15,55,0.97),rgba(40,30,90,0.97));
-      border: 1px solid rgba(76,175,80,0.5);
-      border-left: 5px solid #4CAF50;
-      backdrop-filter: blur(20px);
-      border-radius: 16px;
-      padding: 16px 22px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      min-width: 320px;
-      max-width: 460px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(76,175,80,0.2);
-      transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .notif-toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .notif-toast-icon {
-      width: 46px; height: 46px;
-      border-radius: 12px;
-      background: rgba(76,175,80,0.2);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-      animation: toastIconBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
-    }
-    @keyframes toastIconBounce {
-      from { transform: scale(0) rotate(-20deg); }
-      to   { transform: scale(1) rotate(0deg); }
-    }
-    .notif-toast-body { flex: 1; min-width: 0; }
-    .notif-toast-title { font-size: 14px; font-weight: 800; color: #4CAF50; margin-bottom: 3px; }
-    .notif-toast-msg   { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
-    .notif-toast-close {
-      background: none; border: none;
-      color: var(--text-muted); font-size: 16px;
-      cursor: pointer; padding: 4px; border-radius: 6px;
-      transition: all 0.2s; flex-shrink: 0;
-    }
-    .notif-toast-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
-
-    /* ════════════════ end notification ════════════════ */
-
-    .container { width:95%; max-width:1400px; margin:auto; padding:20px; position: relative; z-index: 1; }
-
-    /* ── TOP BAR ── */
-    .top-bar {
-      display:flex; justify-content:space-between; align-items:center;
-      margin-bottom:30px;
-      background: var(--header-bg);
-      padding:20px; border-radius:20px;
-      backdrop-filter:blur(16px);
-      border: 1px solid var(--border-strong);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
-    }
-    .header { font-size:28px; font-weight:800; color: var(--topbar-text); }
-    .header small { display:block; font-size:14px; margin-top:5px; opacity:0.8; font-weight:400; }
-    .logout-btn {
-      background: linear-gradient(135deg,#e53935,#c62828);
-      padding:12px 25px; border-radius:12px; text-decoration:none;
-      color:white; font-weight:700; transition:all 0.3s;
-      box-shadow:0 4px 15px rgba(229,57,53,0.35);
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-    .logout-btn:hover { background:linear-gradient(135deg,#f44336,#d32f2f); transform:translateY(-2px); box-shadow:0 8px 24px rgba(229,57,53,0.5); }
-
-    /* ── OVERVIEW ── */
-    .overview {
-      display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-      gap:16px; margin-bottom:28px;
-    }
-    .overview-card {
-      background: var(--overview-bg);
-      padding:22px; border-radius:18px; text-align:center;
-      backdrop-filter:blur(12px);
-      border: 1px solid var(--border);
-      transition:all 0.3s;
-      position: relative; overflow: hidden;
-      animation: slideInUp 0.6s both;
-    }
-    .overview-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(196,184,240,0.8), transparent);
-      background-size: 200% 100%; animation: shimmer 3s linear infinite;
-    }
-    @keyframes shimmer { from{background-position:-100% center;} to{background-position:300% center;} }
-    @keyframes slideInUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
-    .overview-card:nth-child(1){animation-delay:0.05s;}
-    .overview-card:nth-child(2){animation-delay:0.1s;}
-    .overview-card:nth-child(3){animation-delay:0.15s;}
-    .overview-card:nth-child(4){animation-delay:0.2s;}
-    .overview-card:nth-child(5){animation-delay:0.25s;}
-    .overview-card:nth-child(6){animation-delay:0.3s;}
-    .overview-card:hover { transform:translateY(-6px); box-shadow:0 16px 40px rgba(0,0,0,0.25); background: var(--overview-hover); border-color: var(--border-strong); }
-    .overview-card strong { font-size:32px; display:block; margin:8px 0; font-family:'Space Mono',monospace; color: var(--text-primary); }
-
-    /* Status pills */
-    .status-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:700; margin-top:8px; }
-    .status-available { background:rgba(76,175,80,0.2); border:2px solid #4CAF50; color: #4CAF50; }
-    .status-break     { background:rgba(255,193,7,0.2);  border:2px solid #FFC107; color: #FFC107; }
-    .status-leave     { background:rgba(244,67,54,0.2);  border:2px solid #F44336; color: #F44336; }
-    .status-offline   { background:rgba(120,120,120,0.2);border:2px solid #888; color: #aaa; }
-    .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .dot-green  { background:#4CAF50; box-shadow:0 0 8px #4CAF50; animation: pulseDot 2s infinite; }
-    .dot-yellow { background:#FFC107; box-shadow:0 0 8px #FFC107; animation: pulseDot 2s infinite; }
-    .dot-red    { background:#F44336; box-shadow:0 0 8px #F44336; }
-    .dot-grey   { background:#888; }
-    @keyframes pulseDot { 0%,100%{transform:scale(1);} 50%{transform:scale(1.4);} }
-
-    /* ── MAIN CARDS ── */
-    .main-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-bottom:28px; }
-    .card {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:28px; border-radius:18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      text-align:center; transition:all 0.3s;
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.3s both;
-    }
-    .card:hover { transform:translateY(-6px); box-shadow:0 20px 50px rgba(0,0,0,0.3); border-color: var(--accent); }
-    .card h3 { color: var(--accent); margin-bottom:14px; font-size:18px; font-weight:700; }
-    .card h2 { font-size:44px; color: var(--text-primary); margin:8px 0; font-family:'Space Mono',monospace; }
-    .card p  { font-size:16px; color: var(--text-secondary); }
-
-    /* ── QUEUE BOX ── */
-    .queue-box {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:24px; border-radius:18px;
-      margin-bottom:24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.4s both;
-    }
-    .queue-box h3 { color: var(--accent); margin-bottom:14px; font-size:20px; font-weight:700; }
-    .queue-box p  { font-size:16px; margin:10px 0; color: var(--text-secondary); }
-    .queue-box strong { color: var(--accent); font-size:22px; font-family:'Space Mono',monospace; }
-
-    /* ── TABLE ── */
-    .appointment-list {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:24px; border-radius:18px;
-      margin-bottom:24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.45s both;
-    }
-    .appointment-list h3 { color: var(--accent); margin-bottom:18px; font-size:22px; font-weight:700; }
-    table { width:100%; border-collapse:collapse; }
-    th,td { padding:14px; text-align:left; border-bottom:1px solid var(--border); }
-    th { background: var(--table-head); color:white; font-weight:700; text-transform:uppercase; font-size:12px; letter-spacing:0.5px; }
-    tr:hover td { background: var(--table-row-hover); transition: background 0.2s; }
-    td { color: var(--text-secondary); font-size:14px; }
-
-    .badge { padding:5px 12px; border-radius:20px; color:white; font-size:11px; font-weight:700; display:inline-block; }
-    .Booked       { background:linear-gradient(135deg,#FFC107,#FF9800); }
-    .Rescheduled  { background:linear-gradient(135deg,#2196F3,#1976D2); }
-    .Completed    { background:linear-gradient(135deg,#4CAF50,#388E3C); }
-    .Cancelled    { background:linear-gradient(135deg,#F44336,#D32F2F); }
-
-    /* ── BUTTONS ── */
-    .btn { background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; padding:10px 18px; border-radius:10px; cursor:pointer; font-weight:700; transition:all 0.3s; margin:0 4px; text-decoration:none; display:inline-block; font-size:13px; font-family:'Outfit',sans-serif; }
-    .btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(102,126,234,0.45); }
-    .btn-danger { background:linear-gradient(135deg,#e53935,#c62828); }
-    .btn-danger:hover { box-shadow:0 5px 15px rgba(229,57,53,0.45); }
-    .btn-green { background:linear-gradient(135deg,#43a047,#2e7d32); }
-    .btn-green:hover { box-shadow:0 5px 15px rgba(67,160,71,0.45); }
-    .btn-orange { background:linear-gradient(135deg,#f59e0b,#d97706); }
-    .btn-sm { padding:7px 13px; font-size:12px; }
-
-    /* ── CHART ── */
-    .chart-container {
-      background: var(--card-bg);
-      padding:28px; border-radius:18px;
-      margin-bottom:24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      max-width:580px; margin-left:auto; margin-right:auto;
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.5s both;
-    }
-    .chart-container h3 { color: var(--accent); margin-bottom:18px; text-align:center; font-size:22px; font-weight:700; }
-    #statsChart { max-height:320px; }
-
-    /* ── PRESCRIPTION ── */
-    .prescription-box {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:28px; border-radius:18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      margin-bottom:24px;
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.55s both;
-    }
-    .prescription-box h3 { color: var(--accent); margin-bottom:18px; font-size:22px; font-weight:700; }
-    .prescription-box input, .prescription-box textarea {
-      width:100%; padding:12px 14px; margin:8px 0;
-      background: var(--input-bg);
-      border:2px solid var(--input-border);
-      border-radius:10px; font-size:15px; font-family:'Outfit',sans-serif;
-      transition:border-color 0.3s, box-shadow 0.3s;
-      color: var(--text-primary);
-    }
-    .prescription-box input::placeholder, .prescription-box textarea::placeholder { color: var(--text-muted); }
-    .prescription-box input:focus, .prescription-box textarea:focus {
-      outline:none; border-color: var(--accent);
-      box-shadow:0 0 0 3px var(--accent-glow);
-    }
-    .prescription-box textarea { resize:vertical; }
-    .prescription-box label { font-weight:700; color: var(--text-secondary); display:block; margin-top:14px; font-size:14px; }
-
-    /* ── FLASH ── */
-    .flash { padding:14px 18px; border-radius:12px; margin-bottom:18px; font-size:15px; font-weight:600; animation: slideInUp 0.4s both; }
-    .flash.success { background:linear-gradient(135deg,#4CAF50,#388E3C); color:white; }
-    .flash.error   { background:linear-gradient(135deg,#F44336,#D32F2F); color:white; }
-    .flash.warning { background:linear-gradient(135deg,#FF9800,#F57C00); color:white; }
-
-    /* ── PRESCRIPTIONS HISTORY ── */
-    .prescriptions-history {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:28px; border-radius:18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      margin-bottom:24px;
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.6s both;
-    }
-    .prescriptions-history h3 { color: var(--accent); margin-bottom:22px; font-size:22px; font-weight:700; display:flex; align-items:center; gap:10px; }
-    .presc-count-badge { background:linear-gradient(135deg,#667eea,#764ba2); color:white; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px; }
-    .prescriptions-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; max-height:580px; overflow-y:auto; padding-right:5px; }
-    .prescriptions-grid::-webkit-scrollbar { width:6px; }
-    .prescriptions-grid::-webkit-scrollbar-thumb { background:linear-gradient(135deg,#667eea,#764ba2); border-radius:10px; }
-    .presc-card {
-      background: var(--surface);
-      border-radius:14px; padding:18px;
-      border-left:5px solid #4CAF50;
-      border: 1px solid var(--border); border-left:5px solid #4CAF50;
-      transition:all 0.3s;
-    }
-    .presc-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(76,175,80,0.2); background: var(--surface-hover); }
-    .presc-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
-    .presc-serial     { background:linear-gradient(135deg,#667eea,#764ba2); color:white; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
-    .presc-date-badge { background:linear-gradient(135deg,#4CAF50,#388E3C); color:white; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
-    .presc-patient-info { background: var(--surface); border-radius:10px; padding:12px 14px; margin-bottom:12px; border:1px solid var(--border); }
-    .presc-patient-info p { margin:4px 0; font-size:13px; color: var(--text-secondary); }
-    .presc-meds-box { background:rgba(76,175,80,0.1); border-radius:10px; padding:12px 14px; margin-bottom:10px; border-left:3px solid #4CAF50; }
-    .presc-meds-box p.meds-title { font-weight:700; color:#4CAF50; font-size:12px; margin-bottom:7px; }
-    .presc-meds-box ul { margin:0; padding-left:16px; color: var(--text-secondary); font-size:12px; }
-    .presc-meds-box ul li { margin:4px 0; line-height:1.4; }
-    .presc-notes-box { background:rgba(255,193,7,0.1); border-left:3px solid #FFC107; border-radius:8px; padding:10px 13px; margin-bottom:12px; }
-    .presc-notes-box p { margin:0; font-size:12px; color: var(--text-secondary); line-height:1.5; }
-    .presc-download-btn { display:block; width:100%; text-align:center; padding:11px 0; background:linear-gradient(135deg,#4CAF50,#388E3C); color:white; border-radius:10px; font-weight:700; font-size:13px; text-decoration:none; transition:all 0.3s; }
-    .presc-download-btn:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(76,175,80,0.4); color:white; text-decoration:none; }
-    .empty-prescriptions { text-align:center; padding:50px 20px; color: var(--text-muted); font-size:16px; font-weight:600; }
-
-    /* ── LEAVE SECTION ── */
-    .leave-section {
-      background: var(--card-bg);
-      color: var(--text-primary);
-      padding:28px; border-radius:20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      margin-bottom:24px;
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      animation: slideInUp 0.6s 0.5s both;
-    }
-    .leave-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px; }
-    .leave-section-header h3 { color: var(--accent); font-size:22px; font-weight:700; display:flex; align-items:center; gap:10px; margin:0; }
-    .leave-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; }
-    .leave-card { background: var(--surface); border-radius:16px; padding:20px; border:2px solid var(--border); }
-    .leave-card h4 { font-size:15px; font-weight:800; color: var(--text-primary); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-
-    .status-options { display:flex; flex-direction:column; gap:10px; }
-    .status-radio-btn { display:flex; align-items:center; gap:12px; padding:12px 15px; border-radius:12px; cursor:pointer; border:2px solid transparent; transition:all 0.25s; font-weight:600; font-size:13px; }
-    .status-radio-btn:hover { transform:translateX(3px); }
-    .status-radio-btn input[type="radio"] { display:none; }
-    .status-radio-btn.opt-available { background:rgba(76,175,80,0.1); border-color:rgba(76,175,80,0.3); color:#4CAF50; }
-    .status-radio-btn.opt-available.selected { background:rgba(76,175,80,0.25); border-color:#4CAF50; }
-    .status-radio-btn.opt-offline  { background: var(--surface); border-color: var(--border); color: var(--text-secondary); }
-    .status-radio-btn.opt-offline.selected  { background:rgba(100,100,100,0.25); border-color:#888; color: var(--text-primary); }
-    .status-icon { font-size:18px; width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-
-    .break-time-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .break-time-row input[type="time"] { flex:1; min-width:100px; padding:10px 12px; border:2px solid var(--input-border); border-radius:10px; font-size:14px; font-family:'Outfit',sans-serif; outline:none; color: var(--text-primary); background: var(--input-bg); transition:border-color 0.2s; }
-    .break-time-row input[type="time"]:focus { border-color: var(--accent); }
-    .break-time-sep { font-size:13px; font-weight:700; color: var(--text-muted); }
-    .break-preview { margin-top:10px; background:rgba(255,193,7,0.1); border-radius:10px; padding:10px 13px; border-left:3px solid #FFC107; font-size:13px; color:#FFC107; font-weight:600; }
-
-    .leave-calendar-card { grid-column: span 2; }
-    @media(max-width:700px){ .leave-calendar-card { grid-column: span 1; } }
-
-    .mini-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .mini-cal-header h4 { font-size:15px; font-weight:800; color: var(--text-primary); margin:0; }
-    .mini-cal-nav { display:flex; gap:8px; }
-    .mini-cal-nav button { background: var(--surface); border:2px solid var(--border); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; color: var(--accent); cursor:pointer; transition:all 0.2s; }
-    .mini-cal-nav button:hover { background: var(--accent); color:white; border-color: var(--accent); }
-    .mini-cal { width:100%; border-collapse:collapse; }
-    .mini-cal th { background:linear-gradient(135deg,#667eea,#764ba2); color:white; font-size:11px; font-weight:700; padding:8px 4px; text-align:center; }
-    .mini-cal td { text-align:center; padding:5px 3px; }
-    .cal-day { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; color: var(--text-secondary); border:2px solid transparent; }
-    .cal-day:hover { background: var(--surface); border-color: var(--accent); color: var(--text-primary); }
-    .cal-day.today { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
-    .cal-day.on-leave { background:linear-gradient(135deg,#F44336,#D32F2F); color:white; border-color:#F44336; }
-    .cal-day.on-leave:hover { background:linear-gradient(135deg,#ef9a9a,#e57373); border-color:#ef9a9a; }
-    .cal-day.past { opacity:0.3; cursor:default; }
-    .cal-day.other-month { opacity:0.15; cursor:default; }
-    .cal-day.empty { cursor:default; }
-
-    .leave-legend { display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; font-size:12px; color: var(--text-secondary); font-weight:600; }
-    .leave-legend span { display:flex; align-items:center; gap:6px; }
-    .leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-
-    .upcoming-leaves { margin-top:14px; }
-    .upcoming-leaves h5 { font-size:12px; font-weight:700; color: var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
-    .leave-tag { display:inline-flex; align-items:center; gap:5px; background:rgba(244,67,54,0.15); color:#F44336; border:1.5px solid rgba(244,67,54,0.3); border-radius:20px; padding:4px 10px; font-size:11px; font-weight:700; margin:3px; }
-    .leave-tag-remove { background:none; border:none; color:#F44336; cursor:pointer; font-size:13px; font-weight:900; padding:0 2px; line-height:1; transition:color 0.2s; }
-    .leave-tag-remove:hover { color:#ff5252; }
-    .no-leaves { font-size:12px; color: var(--text-muted); font-style:italic; padding:6px 0; }
-
-    @media(max-width:768px){
-      .overview { grid-template-columns:repeat(2,1fr); }
-      .main-grid { grid-template-columns:1fr; }
-      table { font-size:13px; } th,td { padding:10px; }
-      .prescriptions-grid { grid-template-columns:1fr; }
-      .notif-bell-btn { right: 84px; }
-    }
-    </style>
-    <script>
-        function checkAppointments() {
-            var total = {{ total_appointments|default(0) }};
-            if (total === 0) { alert("No appointments today!"); return false; }
-            return true;
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doctor Dashboard — Ever Well</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ever Well">
+<link rel="apple-touch-icon" href="/static/images/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & VARIABLES ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f1f5f9;--wh:#fff;--tx:#0f172a;--tx2:#64748b;--tx3:#94a3b8;--bd:#e2e8f0;
+  --pri:#4f46e5;--pri-l:#eef2ff;--pri-d:#3730a3;
+  --gr:#10b981;--rd:#ef4444;--or:#f59e0b;--bl:#3b82f6;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --sh2:0 4px 16px rgba(0,0,0,.1);
+  --r:12px;--sw:240px;
+}
+body.dark{
+  --bg:#0f172a;--wh:#1e293b;--tx:#f1f5f9;--tx2:#94a3b8;--tx3:#64748b;--bd:#334155;--pri-l:#1e1b4b;
+  --sh:0 1px 3px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;display:flex;}
+</style>
+<style>
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sw);background:var(--wh);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;transition:transform .3s;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;border-bottom:1px solid var(--bd);}
+.sb-logo img{width:38px;height:38px;border-radius:10px;object-fit:cover;}
+.sb-logo-name{font-size:15px;font-weight:800;color:var(--tx);}
+.sb-logo-sub{font-size:10px;color:var(--tx3);font-weight:500;}
+.sb-nav{padding:12px 10px;flex:1;}
+.sb-sec{font-size:10px;font-weight:700;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;padding:10px 10px 4px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--tx2);transition:all .15s;text-decoration:none;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;}
+.sb-item:hover{background:#f8fafc;color:var(--pri);}
+.sb-item.active{background:var(--pri-l);color:var(--pri);}
+.sb-item-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sb-profile{padding:14px 16px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+.sb-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pri),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sb-pname{font-size:13px;font-weight:700;color:var(--tx);}
+.sb-prole{font-size:11px;color:var(--tx3);}
+.sb-online{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gr);margin-right:4px;}
+</style>
+<style>
+/* ── MAIN LAYOUT ── */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+/* ── TOPBAR ── */
+.topbar{background:var(--wh);border-bottom:1px solid var(--bd);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-left h1{font-size:20px;font-weight:800;color:var(--tx);}
+.topbar-left p{font-size:12px;color:var(--tx2);margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.search-box{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid var(--bd);border-radius:10px;padding:8px 14px;min-width:240px;}
+.search-box input{border:none;background:none;outline:none;font-size:13px;color:var(--tx);font-family:Inter,sans-serif;width:100%;}
+.search-box input::placeholder{color:var(--tx3);}
+.tb-btn{width:38px;height:38px;border-radius:10px;background:#f8fafc;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;position:relative;transition:all .15s;}
+.tb-btn:hover{background:var(--pri-l);border-color:var(--pri);}
+.tb-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--rd);border:2px solid var(--wh);}
+/* ── CONTENT ── */
+.content{padding:22px 24px;flex:1;}
+/* ── FLASH MESSAGES ── */
+.flash{padding:10px 16px;border-radius:10px;margin-bottom:14px;font-size:13px;font-weight:600;}
+.flash.success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+.flash.error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.flash.warning{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+</style>
+<style>
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--wh);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);border:1px solid var(--bd);}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;}
+.stat-val{font-size:26px;font-weight:900;color:var(--tx);line-height:1;}
+.stat-lbl{font-size:11px;color:var(--tx2);font-weight:600;margin-top:3px;}
+.stat-link{font-size:11px;color:var(--pri);font-weight:700;text-decoration:none;display:inline-block;margin-top:6px;}
+.stat-link:hover{text-decoration:underline;}
+/* ── GRID LAYOUTS ── */
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+/* ── CARD ── */
+.card{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);border:1px solid var(--bd);}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-hdr h3{font-size:14px;font-weight:700;color:var(--tx);}
+.card-link{font-size:12px;color:var(--pri);font-weight:600;text-decoration:none;cursor:pointer;background:none;border:none;padding:0;font-family:Inter,sans-serif;}
+.card-link:hover{text-decoration:underline;}
+/* ── BADGE ── */
+.badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.badge-green{background:#d1fae5;color:#065f46;}
+.badge-blue{background:#dbeafe;color:#1e40af;}
+.badge-yellow{background:#fef3c7;color:#92400e;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-gray{background:#f1f5f9;color:#475569;}
+</style>
+<style>
+/* ── APPOINTMENT LIST ── */
+.appt-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.appt-row:last-child{border-bottom:none;}
+.appt-time{font-size:12px;font-weight:700;color:var(--tx2);min-width:60px;}
+.appt-info{flex:1;}
+.appt-name{font-size:13px;font-weight:700;color:var(--tx);}
+.appt-sub{font-size:11px;color:var(--tx3);margin-top:1px;}
+/* ── PATIENT QUEUE ── */
+.queue-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.queue-row:last-child{border-bottom:none;}
+.queue-num{width:26px;height:26px;border-radius:50%;background:var(--pri-l);color:var(--pri);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.queue-info{flex:1;}
+.queue-name{font-size:13px;font-weight:700;color:var(--tx);}
+.queue-sub{font-size:11px;color:var(--tx3);}
+.queue-wait{font-size:11px;font-weight:700;color:var(--or);}
+.call-btn{width:100%;background:var(--pri);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px;font-family:Inter,sans-serif;transition:all .2s;}
+.call-btn:hover{background:var(--pri-d);transform:translateY(-1px);}
+/* ── QUICK ACTIONS ── */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.qa-btn{background:#f8fafc;border:1.5px solid var(--bd);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;font-size:11px;font-weight:700;color:var(--tx2);display:flex;flex-direction:column;align-items:center;gap:6px;font-family:Inter,sans-serif;}
+.qa-btn:hover{border-color:var(--pri);color:var(--pri);background:var(--pri-l);transform:translateY(-2px);}
+.qa-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+/* ── TODAY'S SUMMARY ── */
+.sum-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd);}
+.sum-row:last-child{border-bottom:none;}
+.sum-lbl{font-size:13px;color:var(--tx2);}
+.sum-val{font-size:14px;font-weight:800;color:var(--tx);}
+</style>
+<style>
+/* ── UPCOMING APPOINTMENTS ── */
+.up-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.up-row:last-child{border-bottom:none;}
+.up-date{background:var(--pri-l);border-radius:8px;padding:6px 10px;text-align:center;min-width:44px;flex-shrink:0;}
+.up-day{font-size:16px;font-weight:900;color:var(--pri);line-height:1;}
+.up-mon{font-size:9px;font-weight:700;color:var(--pri);text-transform:uppercase;}
+.up-info{flex:1;}
+.up-name{font-size:13px;font-weight:700;color:var(--tx);}
+.up-sub{font-size:11px;color:var(--tx3);}
+.up-time{font-size:12px;font-weight:700;color:var(--tx2);white-space:nowrap;}
+/* ── RECENT PATIENTS ── */
+.pat-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd);}
+.pat-row:last-child{border-bottom:none;}
+.pat-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.pat-name{font-size:13px;font-weight:700;color:var(--tx);}
+.pat-sub{font-size:11px;color:var(--tx3);}
+.pat-time{font-size:11px;color:var(--tx3);margin-left:auto;white-space:nowrap;}
+/* ── MODAL ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;}
+.modal-ov.open{display:flex;}
+.modal-box{background:var(--wh);border-radius:16px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;}
+.modal-hdr{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+.modal-hdr h3{color:#fff;font-size:15px;font-weight:800;}
+.modal-close{background:#fff;border:none;color:#333;border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.modal-body{padding:18px 20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bd);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--tx);background:var(--wh);outline:none;transition:border .2s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--pri);}
+.btn-pri{background:var(--pri);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;transition:all .2s;}
+.btn-pri:hover{background:var(--pri-d);}
+.btn-sec{background:var(--pri-l);color:var(--pri);border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;}
+</style>
+<style>
+/* ── NOTIFICATION PANEL ── */
+.notif-panel{display:none;position:fixed;top:60px;right:16px;width:340px;max-height:480px;background:var(--wh);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--bd);z-index:200;overflow:hidden;flex-direction:column;}
+.notif-panel.open{display:flex;}
+.notif-hdr{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.notif-hdr-title{font-size:14px;font-weight:800;color:var(--tx);}
+.notif-close{background:var(--bg);border:1px solid var(--bd);border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:13px;font-weight:800;color:var(--tx2);display:flex;align-items:center;justify-content:center;}
+.notif-body{overflow-y:auto;max-height:400px;padding:10px 14px;}
+.notif-item{display:flex;gap:10px;padding:10px;border-radius:10px;background:var(--pri-l);margin-bottom:8px;border-left:3px solid var(--pri);}
+.notif-icon{font-size:20px;flex-shrink:0;}
+.notif-title{font-size:13px;font-weight:700;color:var(--tx);}
+.notif-sub{font-size:12px;color:var(--tx2);}
+.notif-date{font-size:11px;color:var(--tx3);margin-top:2px;}
+.notif-empty{text-align:center;padding:30px;color:var(--tx3);font-size:13px;}
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .stats-row{grid-template-columns:repeat(3,1fr);}
+  .grid3{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.mob-open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .grid3,.grid2{grid-template-columns:1fr;}
+  .search-box{display:none;}
+  .topbar-left h1{font-size:16px;}
+  #mobHamDoc{display:flex!important;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .content{padding:14px;}
+}
+</style>
 </head>
 <body>
+{% set pending = appointments|selectattr("status","in",["Booked","Rescheduled"])|list %}
+{% set completed = appointments|selectattr("status","equalto","Completed")|list %}
+{% set months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+{% set av_colors = ["#6C63FF","#10b981","#f59e0b","#ef4444","#3b82f6","#8b5cf6"] %}
 
-<!-- BG -->
-<canvas id="bgCanvas"></canvas>
-<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
-<div class="grid-ov"></div>
+<!-- Mobile overlay -->
+<div id="mobOverlayDoc" onclick="closeMobDoc()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;"></div>
 
-<!-- ════════════════════════════════════════════════
-     🔔 NOTIFICATION BELL FLOATING BUTTON
-════════════════════════════════════════════════ -->
-<button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel()" title="Appointment Notifications" aria-label="Notifications">
-    <span class="bell-icon" id="bellIcon">🔔</span>
-    <span class="notif-badge hidden" id="notifBadge">0</span>
-</button>
-
-<!-- NOTIFICATION OVERLAY -->
-<div class="notif-overlay" id="notifOverlay" onclick="closeNotifPanel()"></div>
-
-<!-- NOTIFICATION SLIDE PANEL -->
-<div class="notif-panel" id="notifPanel">
-    <div class="notif-panel-header">
-        <div class="notif-panel-title">
-            <span style="font-size:28px;">🔔</span>
-            <div>
-                <h3>Appointment Notifications</h3>
-                <p id="notifSubtitle">No new notifications</p>
-            </div>
-        </div>
-        <button class="notif-panel-close" onclick="closeNotifPanel()">✕</button>
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="docSidebar">
+  <div class="sb-logo">
+    <img src="/static/images/logo.png" alt="Ever Well">
+    <div>
+      <div class="sb-logo-name">Ever Well</div>
+      <div class="sb-logo-sub">Doctor Portal</div>
     </div>
-    <div class="notif-panel-actions">
-        <button class="notif-action-btn" onclick="markAllRead()">✓ Mark all read</button>
-        <button class="notif-action-btn" onclick="clearAllNotifs()">🗑️ Clear all</button>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">MAIN</div>
+    <a class="sb-item active" href="#"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="#" onclick="openModal('prescModal');return false;"><span class="sb-item-icon">💊</span> Prescriptions</a>
+    <a class="sb-item" href="#" onclick="openModal('leaveModal');return false;"><span class="sb-item-icon">📅</span> Leave / Schedule</a>
+    <div class="sb-sec">ACCOUNT</div>
+    <a class="sb-item" href="#" onclick="openModal('statusModal');return false;"><span class="sb-item-icon">⚙️</span> Status Settings</a>
+    <a class="sb-item" href="/logout" style="color:#ef4444;"><span class="sb-item-icon">🚪</span> Logout</a>
+  </nav>
+  <div class="sb-profile">
+    <div class="sb-av">👨‍⚕️</div>
+    <div>
+      <div class="sb-pname">{{ doctor.name }}</div>
+      <div class="sb-prole"><span class="sb-online"></span>{{ doctor.department }}</div>
     </div>
-    <div class="notif-list" id="notifList">
-        <div class="notif-empty" id="notifEmpty">
-            <div class="notif-empty-icon">🔔</div>
-            <p>No notifications yet</p>
-            <small>New appointment bookings will appear here in real time</small>
-        </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="mobHamDoc" onclick="toggleMobDoc()" style="display:none;background:#f8fafc;border:1.5px solid var(--bd);border-radius:9px;width:36px;height:36px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;" aria-label="Menu">☰</button>
+      <div class="topbar-left">
+        <h1>Welcome, {{ doctor.name }} 👋</h1>
+        <p>Here's what's happening in your clinic today.</p>
+      </div>
     </div>
-</div>
-
-<!-- TOAST POPUP (bottom center) -->
-<div class="notif-toast" id="notifToast">
-    <div class="notif-toast-icon">📅</div>
-    <div class="notif-toast-body">
-        <div class="notif-toast-title" id="notifToastTitle">New Appointment Booked!</div>
-        <div class="notif-toast-msg"  id="notifToastMsg">A patient has booked an appointment.</div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span style="font-size:14px;color:var(--tx3);">🔍</span>
+        <input type="text" placeholder="Search patients, appointments…" id="docSearch" oninput="handleSearch(this.value)">
+      </div>
+      <button class="tb-btn" id="bellBtn" title="Notifications" aria-label="Notifications">
+        🔔
+        <span class="tb-dot" id="notifDot" style="display:{% if pending|length > 0 %}block{% else %}none{% endif %};"></span>
+      </button>
+      <button id="themeToggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme" style="width:38px;height:38px;border-radius:10px;background:#f8fafc;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .2s;">🌙</button>
     </div>
-    <button class="notif-toast-close" onclick="hideToast()">✕</button>
-</div>
+  </div>
 
-<!-- THEME TOGGLE -->
-<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
-  <span id="themeIcon">🌙</span>
-</button>
+  <!-- CONTENT -->
+  <div class="content">
 
-<div class="container">
-    <!-- TOP BAR -->
-    <div class="top-bar">
-        <div class="header">
-            👨‍⚕️ Welcome {{ doctor.name }}
-            <small>Department: {{ doctor.department }}</small>
-        </div>
-        <a href="/logout" class="logout-btn">Logout</a>
-    </div>
-
-    <!-- FLASH -->
+    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}{% for category, message in messages %}
-    <div class="flash {{ category }}">{{ message }}</div>
-    {% endfor %}{% endif %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
     {% endwith %}
 
-    <!-- OVERVIEW -->
-    <div class="overview">
-        <div class="overview-card">👥 <strong>{{ total_patients }}</strong>Total Patients</div>
-        <div class="overview-card">📅 <strong>{{ total_appointments }}</strong>Total Appointments</div>
-        <div class="overview-card">⏳ <strong>{{ pending_appointments }}</strong>Pending</div>
-        <div class="overview-card">✅ <strong>{{ completed_appointments }}</strong>Completed</div>
-        <div class="overview-card">💊 <strong>{{ sent_prescriptions|length }}</strong>Prescriptions Sent</div>
-        <div class="overview-card" id="liveStatusCard">
-            🟢 <strong id="liveStatusEmoji">--</strong>
-            <span id="liveStatusLabel" style="font-size:13px;">My Status</span>
-            <div id="liveStatusPill" style="margin-top:8px;"></div>
-        </div>
+    <!-- ── STATS ROW ── -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#eef2ff;">📅</div>
+        <div class="stat-val">{{ total_appointments }}</div>
+        <div class="stat-lbl">Today's Appointments</div>
+        <a class="stat-link" href="#">View all</a>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef3c7;">⏳</div>
+        <div class="stat-val">{{ pending|length }}</div>
+        <div class="stat-lbl">Pending</div>
+        <a class="stat-link" href="#">View all</a>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#d1fae5;">✅</div>
+        <div class="stat-val">{{ completed|length }}</div>
+        <div class="stat-lbl">Completed</div>
+        <a class="stat-link" href="#">View all</a>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dbeafe;">👥</div>
+        <div class="stat-val">{{ total_patients }}</div>
+        <div class="stat-lbl">Total Patients</div>
+        <a class="stat-link" href="#">View all</a>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fce7f3;">⭐</div>
+        <div class="stat-val">{{ avg_rating }}</div>
+        <div class="stat-lbl">Avg Rating</div>
+        <a class="stat-link" href="#">View all</a>
+      </div>
     </div>
 
-    <!-- MAIN CARDS -->
-    <div class="main-grid">
-        <div class="card">
-            <h3>🎫 Current Token</h3>
-            <h2>{{ current_token if current_token else 0 }}</h2>
-        </div>
-        <div class="card">
-            <h3>📋 Today's Appointments</h3>
-            <h2>{{ total_appointments }}</h2>
-            <p>Total Scheduled</p>
-        </div>
-        <div class="card">
-            <h3>⚡ Quick Actions</h3>
-            <form method="POST" action="/doctor/next_token/{{ doctor.username }}" onsubmit="return checkAppointments();">
-                <button class="btn" style="margin-top:18px;padding:14px 28px;font-size:17px;">Next Token ▶</button>
-            </form>
-        </div>
-    </div>
+    <!-- ── ROW 1: 3-column grid ── -->
+    <div class="grid3">
 
-    <!-- QUEUE -->
-    <div class="queue-box">
-        <h3>⏳ Queue Management</h3>
-        <p>Now Serving Token: <strong>{{ current_token if current_token else 0 }}</strong></p>
-        <p>Upcoming Tokens:
-            {% for a in appointments[:5] %}
-            <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:5px 10px;border-radius:6px;margin:0 4px;font-size:13px;font-weight:700;">{{ a.token }}</span>
-            {% endfor %}
-        </p>
-    </div>
-
-    <!-- APPOINTMENTS TABLE -->
-    <div class="appointment-list">
-        <h3>📅 Today's Appointments</h3>
+      <!-- Today's Appointments -->
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Today's Appointments</h3>
+          <button class="card-link" onclick="openModal('leaveModal')">View Calendar</button>
+        </div>
         {% if appointments %}
-        <table>
-            <tr><th>Token</th><th>Patient</th><th>Age</th><th>Mobile</th><th>Time</th><th>Status</th><th>Actions</th></tr>
-            {% for appointment in appointments %}
-            <tr>
-                <td><strong style="color:var(--accent);font-family:'Space Mono',monospace;">{{ appointment.token }}</strong></td>
-                <td style="color:var(--text-primary);font-weight:600;">
-                    {{ appointment.patient_name if appointment.patient_name else appointment.username }}
-                    {% if appointment.patient_gender and appointment.patient_gender != '—' %}
-                    <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">({{ appointment.patient_gender }})</span>
-                    {% endif %}
-                </td>
-                <td style="color:var(--text-secondary);">{{ appointment.patient_age }}</td>
-                <td style="color:var(--text-secondary);font-family:'Space Mono',monospace;font-size:12px;">{{ appointment.patient_mobile }}</td>
-                <td>{{ appointment.time }}</td>
-                <td><span class="badge {{ appointment.status }}">{{ appointment.status }}</span></td>
-                <td>
-                    {% if appointment.status != "Completed" and appointment.status != "Cancelled" %}
-                    <a href="/doctor/done/{{ appointment._id }}" class="btn btn-sm">✅ Done</a>
-                    <a href="/doctor/cancel/{{ appointment._id }}" class="btn btn-sm btn-danger">❌ Cancel</a>
-                    {% else %}
-                    <span style="color:var(--text-muted);">—</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+          {% for a in appointments[:6] %}
+          <div class="appt-row">
+            <div class="appt-time">{{ a.time }}</div>
+            <div class="appt-info">
+              <div class="appt-name">{{ a.patient_name }}</div>
+              <div class="appt-sub">Token #{{ a.token }}</div>
+            </div>
+            {% if a.status == "Completed" %}
+              <span class="badge badge-green">Completed</span>
+            {% elif a.status == "Cancelled" %}
+              <span class="badge badge-red">Cancelled</span>
+            {% elif a.status == "Rescheduled" %}
+              <span class="badge badge-yellow">Rescheduled</span>
+            {% else %}
+              <div style="display:flex;gap:5px;align-items:center;">
+                <a href="/doctor/done/{{ a._id }}" onclick="return confirm('Mark as completed?')" style="background:#d1fae5;color:#065f46;border:none;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;">✅ Done</a>
+                <a href="/doctor/cancel/{{ a._id }}" onclick="return confirm('Cancel this appointment?')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;">✕</a>
+              </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% if appointments|length > 6 %}
+          <div style="margin-top:10px;text-align:center;">
+            <button class="card-link">+ View all {{ appointments|length }} appointments</button>
+          </div>
+          {% endif %}
         {% else %}
-        <p style="text-align:center;padding:30px;color:var(--text-muted);font-size:17px;">📭 No appointments booked for today</p>
+          <div style="text-align:center;padding:24px;color:var(--tx3);font-size:13px;">📭 No appointments today</div>
         {% endif %}
-    </div>
+      </div>
 
-    <!-- CHART -->
-    <div class="chart-container">
-        <h3>📊 Live Appointment Statistics</h3>
-        <canvas id="statsChart"></canvas>
-    </div>
-
-    <!-- LEAVE & STATUS -->
-    <div class="leave-section">
-        <div class="leave-section-header">
-            <h3>🏖️ Leave & Availability Management</h3>
-            <form method="POST" action="/doctor/clear-past-leaves" style="margin:0;">
-                <input type="hidden" name="username" value="{{ doctor.username }}">
-                <button type="submit" class="btn btn-sm btn-orange">🧹 Clear Past Leaves</button>
-            </form>
+      <!-- Patient Queue -->
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Patient Queue</h3>
+          <span style="background:var(--pri-l);color:var(--pri);font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">{{ pending|length }}</span>
         </div>
-        <div class="leave-grid">
-            <!-- Status Toggle -->
-            <div class="leave-card">
-                <h4>🟢 Online Status</h4>
-                <form method="POST" action="/doctor/set-leave" id="statusForm">
-                    <input type="hidden" name="username" value="{{ doctor.username }}">
-                    <input type="hidden" name="action" value="set_status">
-                    <div class="status-options">
-                        <label class="status-radio-btn opt-available {% if status_override == 'available' %}selected{% endif %}"
-                               onclick="submitStatus('available')">
-                            <span class="status-icon">🟢</span>
-                            <div><div>Available / Online</div><div style="font-size:11px;opacity:0.7;margin-top:2px;">Patients can book appointments</div></div>
-                        </label>
-                        <label class="status-radio-btn opt-offline {% if status_override == 'offline' %}selected{% endif %}"
-                               onclick="submitStatus('offline')">
-                            <span class="status-icon">⭕</span>
-                            <div><div>Offline / Not Available</div><div style="font-size:11px;opacity:0.7;margin-top:2px;">Block all new bookings</div></div>
-                        </label>
-                    </div>
-                    <input type="hidden" name="status_override" id="statusInput" value="{{ status_override }}">
-                </form>
+        {% if pending %}
+          {% for a in pending[:6] %}
+          <div class="queue-row">
+            <div class="queue-num">{{ loop.index }}</div>
+            <div class="queue-info">
+              <div class="queue-name">{{ a.patient_name }}</div>
+              <div class="queue-sub">{{ a.time }} · Token #{{ a.token }}</div>
             </div>
-
-            <!-- Lunch Break -->
-            <div class="leave-card">
-                <h4>⏸️ Lunch Break Window</h4>
-                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Patients booking during this window will be redirected.</p>
-                <form method="POST" action="/doctor/set-leave">
-                    <input type="hidden" name="username" value="{{ doctor.username }}">
-                    <input type="hidden" name="action" value="set_break">
-                    <div class="break-time-row">
-                        <input type="time" name="break_start" value="{{ break_start }}" id="breakStart" oninput="updateBreakPreview()">
-                        <span class="break-time-sep">to</span>
-                        <input type="time" name="break_end"   value="{{ break_end }}"   id="breakEnd"   oninput="updateBreakPreview()">
-                        <button type="submit" class="btn btn-sm btn-green">Save</button>
-                    </div>
-                    <div class="break-preview" id="breakPreview">🍽️ Break: {{ break_start }} – {{ break_end }}</div>
-                </form>
+            <div style="display:flex;gap:5px;">
+              <a href="/doctor/done/{{ a._id }}" onclick="return confirm('Mark as completed?')" style="background:#d1fae5;color:#065f46;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;text-decoration:none;">✅</a>
+              <a href="/doctor/cancel/{{ a._id }}" onclick="return confirm('Cancel?')" style="background:#fee2e2;color:#991b1b;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;text-decoration:none;">✕</a>
             </div>
-
-            <!-- Leave Calendar -->
-            <div class="leave-card leave-calendar-card">
-                <div class="mini-cal-header">
-                    <h4>📅 Select Leave Days</h4>
-                    <div class="mini-cal-nav">
-                        <button onclick="calPrev()">◀</button>
-                        <span id="calMonthLabel" style="font-size:13px;font-weight:700;color:var(--accent);display:flex;align-items:center;padding:0 8px;"></span>
-                        <button onclick="calNext()">▶</button>
-                    </div>
-                </div>
-                <table class="mini-cal" id="miniCal"></table>
-                <div class="leave-legend">
-                    <span><span class="leg-dot" style="background:linear-gradient(135deg,#F44336,#D32F2F);"></span>On Leave</span>
-                    <span><span class="leg-dot" style="background:linear-gradient(135deg,#667eea,#764ba2);"></span>Today</span>
-                    <span><span class="leg-dot" style="background:rgba(100,100,100,0.5);"></span>Past (click to remove)</span>
-                </div>
-                <div class="upcoming-leaves">
-                    <h5>📌 Upcoming Leave Dates</h5>
-                    <div id="upcomingLeavesTags">
-                        {% if upcoming_leaves %}
-                            {% for d in upcoming_leaves %}
-                            <span class="leave-tag">📅 {{ d }}
-                                <form method="POST" action="/doctor/set-leave" style="display:inline;margin:0;">
-                                    <input type="hidden" name="username" value="{{ doctor.username }}">
-                                    <input type="hidden" name="action" value="remove_leave">
-                                    <input type="hidden" name="leave_date" value="{{ d }}">
-                                    <button type="submit" class="leave-tag-remove" title="Remove">✕</button>
-                                </form>
-                            </span>
-                            {% endfor %}
-                        {% else %}
-                            <p class="no-leaves">No upcoming leave dates set.</p>
-                        {% endif %}
-                    </div>
-                </div>
-                <form method="POST" action="/doctor/set-leave" id="addLeaveForm" style="display:none;">
-                    <input type="hidden" name="username" value="{{ doctor.username }}">
-                    <input type="hidden" name="action" id="leaveAction" value="add_leave">
-                    <input type="hidden" name="leave_date" id="leaveFormDate" value="">
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- PRESCRIPTION -->
-    <div class="prescription-box">
-        <h3>💊 Generate & Send Prescription</h3>
-        <div style="background:rgba(76,175,80,0.15);border:2px solid #4CAF50;border-radius:12px;padding:13px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;color:#4CAF50;font-size:14px;font-weight:600;">
-            📋 The prescription will be delivered directly to the patient's Medical Records section.
-        </div>
-        <form action="/send-prescription" method="POST" id="prescriptionForm">
-            <input type="hidden" name="doctor" value="{{ doctor.name }}">
-            <input type="hidden" name="doctor_username" value="{{ doctor.username }}">
-            <label>Patient Username <span style="color:#e53935;">*</span></label>
-            <input type="text" name="patient_username" id="patientUsernameInput"
-                placeholder="🔍 Enter patient's login username" required autocomplete="off"
-                oninput="lookupPatient(this.value)">
-            <div id="patientLookupResult" style="margin-top:6px;font-size:13px;font-weight:600;min-height:20px;"></div>
-            <label>Medicines & Dosage</label>
-            <textarea name="medicines" placeholder="e.g.&#10;Paracetamol 500mg — twice daily&#10;Amoxicillin 250mg — three times daily" required style="min-height:110px;"></textarea>
-            <label>Doctor's Notes</label>
-            <textarea name="notes" placeholder="Additional instructions, dietary advice, follow-up date, etc." style="min-height:90px;"></textarea>
-            <button class="btn btn-green" type="submit" style="margin-top:18px;padding:14px 28px;font-size:17px;width:100%;">
-                📋 Send Prescription to Patient
-            </button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center;padding:24px;color:var(--tx3);font-size:13px;">✅ Queue is empty</div>
+        {% endif %}
+        <form method="POST" action="/doctor/next_token/{{ doctor.username }}">
+          <button type="submit" class="call-btn">📢 Call Next Patient</button>
         </form>
-    </div>
+      </div>
 
-    <!-- SENT PRESCRIPTIONS -->
-    <div class="prescriptions-history">
-        <h3>📜 Sent Prescriptions History <span class="presc-count-badge">{{ sent_prescriptions|length }} Total</span></h3>
-        {% if sent_prescriptions and sent_prescriptions|length > 0 %}
-        <div class="prescriptions-grid">
-            {% for p in sent_prescriptions %}
-            <div class="presc-card">
-                <div class="presc-card-header">
-                    <span class="presc-serial">Rx #{{ p.serial }}</span>
-                    <span class="presc-date-badge">📅 {{ p.date }}</span>
-                </div>
-                <div class="presc-patient-info">
-                    <p>👤 <strong>Patient:</strong> {{ p.patient_name }}</p>
-                    <p>🔑 <strong>Username:</strong> {{ p.patient_username }}</p>
-                </div>
-                <div class="presc-meds-box">
-                    <p class="meds-title">💊 Medications:</p>
-                    <ul>{% for med in p.medications %}<li>{{ med }}</li>{% endfor %}</ul>
-                </div>
-                {% if p.notes %}
-                <div class="presc-notes-box"><p><strong>📋 Notes:</strong> {{ p.notes }}</p></div>
-                {% endif %}
-                <a href="{{ p.file_url }}" class="presc-download-btn">📥 Download PDF</a>
-            </div>
-            {% endfor %}
+      <!-- Quick Actions + Today's Summary -->
+      <div class="card">
+        <div class="card-hdr"><h3>Quick Actions</h3></div>
+        <div class="qa-grid">
+          <button class="qa-btn" onclick="openModal('prescModal')">
+            <div class="qa-icon" style="background:#eef2ff;">📝</div>
+            New Prescription
+          </button>
+          <button class="qa-btn" onclick="openModal('statusModal')">
+            <div class="qa-icon" style="background:#d1fae5;">🟢</div>
+            Set Status
+          </button>
+          <button class="qa-btn" onclick="openModal('leaveModal')">
+            <div class="qa-icon" style="background:#fef3c7;">📅</div>
+            Set Leave
+          </button>
+          <button class="qa-btn" onclick="openModal('breakModal')">
+            <div class="qa-icon" style="background:#fce7f3;">⏸️</div>
+            Set Break
+          </button>
         </div>
+        <div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Today's Summary</div>
+          <div class="sum-row"><span class="sum-lbl">Total Appointments</span><span class="sum-val">{{ total_appointments }}</span></div>
+          <div class="sum-row"><span class="sum-lbl">Completed</span><span class="sum-val" style="color:var(--gr);">{{ completed|length }}</span></div>
+          <div class="sum-row"><span class="sum-lbl">Pending</span><span class="sum-val" style="color:var(--or);">{{ pending|length }}</span></div>
+          <div class="sum-row"><span class="sum-lbl">Avg Rating</span><span class="sum-val" style="color:var(--or);">⭐ {{ avg_rating }}/5</span></div>
+        </div>
+      </div>
+
+    </div><!-- /grid3 -->
+
+    <!-- ── ROW 2: 2-column grid ── -->
+    <div class="grid2">
+
+      <!-- Upcoming Appointments -->
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Upcoming Appointments</h3>
+          <button class="card-link">View all</button>
+        </div>
+        {% if pending %}
+          {% for a in pending[:5] %}
+          {% set parts = a.date.split('-') if a.date and '-' in a.date else ['','',''] %}
+          <div class="up-row">
+            <div class="up-date">
+              <div class="up-day">{{ parts[2] }}</div>
+              <div class="up-mon">{{ months[parts[1]|int - 1] if parts[1] else '' }}</div>
+            </div>
+            <div class="up-info">
+              <div class="up-name">{{ a.patient_name }}</div>
+              <div class="up-sub">Token #{{ a.token }} · {{ a.patient_age }}Y {{ a.patient_gender }}</div>
+            </div>
+            <div class="up-time">{{ a.time }}</div>
+          </div>
+          {% endfor %}
         {% else %}
-        <div class="empty-prescriptions">💊 No prescriptions sent yet</div>
+          <div style="text-align:center;padding:24px;color:var(--tx3);font-size:13px;">📭 No upcoming appointments</div>
         {% endif %}
+      </div>
+
+      <!-- Recent Patients -->
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Recent Patients</h3>
+          <button class="card-link">View all</button>
+        </div>
+        {% if appointments %}
+          {% for a in appointments[:6] %}
+          <div class="pat-row">
+            <div class="pat-av" style="background:{{ av_colors[loop.index0 % 6] }};">
+              {{ a.patient_name[:2]|upper if a.patient_name else '??' }}
+            </div>
+            <div>
+              <div class="pat-name">{{ a.patient_name }}</div>
+              <div class="pat-sub">{{ a.patient_age }}Y · {{ a.patient_gender }} · Token #{{ a.token }}</div>
+            </div>
+            <div class="pat-time">{{ a.time }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center;padding:24px;color:var(--tx3);font-size:13px;">👥 No patients today</div>
+        {% endif %}
+      </div>
+
+    </div><!-- /grid2 -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Prescription Modal -->
+<div id="prescModal" class="modal-ov" role="dialog" aria-modal="true" aria-labelledby="prescModalTitle">
+  <div class="modal-box">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,#10b981,#059669);">
+      <h3 id="prescModalTitle">💊 Send Prescription</h3>
+      <button class="modal-close" onclick="closeModal('prescModal')" aria-label="Close">✕</button>
     </div>
+    <div class="modal-body">
+      <form method="POST" action="/send-prescription">
+        <input type="hidden" name="doctor" value="{{ doctor.name }}">
+        <input type="hidden" name="doctor_username" value="{{ doctor.username }}">
+        <div class="form-group">
+          <label for="prescPatInput">Patient Username</label>
+          <input type="text" id="prescPatInput" name="patient_username" placeholder="Enter patient username" required oninput="searchPatient(this.value)">
+          <div id="prescPatResult" style="font-size:12px;margin-top:4px;"></div>
+        </div>
+        <div class="form-group">
+          <label for="prescMeds">Medicines &amp; Dosage</label>
+          <textarea id="prescMeds" name="medicines" rows="3" placeholder="e.g. Paracetamol 500mg — twice daily" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="prescNotes">Notes</label>
+          <textarea id="prescNotes" name="notes" rows="2" placeholder="Additional instructions…"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn-sec" onclick="closeModal('prescModal')">Cancel</button>
+          <button type="submit" class="btn-pri">📤 Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Status Modal -->
+<div id="statusModal" class="modal-ov" role="dialog" aria-modal="true" aria-labelledby="statusModalTitle">
+  <div class="modal-box">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+      <h3 id="statusModalTitle">⚙️ Set Status</h3>
+      <button class="modal-close" onclick="closeModal('statusModal')" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/doctor/set-leave">
+        <input type="hidden" name="username" value="{{ doctor.username }}">
+        <input type="hidden" name="action" value="set_status">
+        <div class="form-group">
+          <label for="statusSelect">Current Status</label>
+          <select id="statusSelect" name="status_override">
+            <option value="available" {% if status_override == "available" %}selected{% endif %}>🟢 Available</option>
+            <option value="offline" {% if status_override == "offline" %}selected{% endif %}>🔴 Offline</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn-sec" onclick="closeModal('statusModal')">Cancel</button>
+          <button type="submit" class="btn-pri">✅ Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Modal -->
+<div id="leaveModal" class="modal-ov" role="dialog" aria-modal="true" aria-labelledby="leaveModalTitle">
+  <div class="modal-box">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+      <h3 id="leaveModalTitle">📅 Manage Leave</h3>
+      <button class="modal-close" onclick="closeModal('leaveModal')" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/doctor/set-leave">
+        <input type="hidden" name="username" value="{{ doctor.username }}">
+        <input type="hidden" name="action" value="add_leave">
+        <div class="form-group">
+          <label for="leaveDate">Add Leave Date</label>
+          <input type="date" id="leaveDate" name="leave_date" required>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px;">
+          <button type="button" class="btn-sec" onclick="closeModal('leaveModal')">Cancel</button>
+          <button type="submit" class="btn-pri">➕ Add Leave</button>
+        </div>
+      </form>
+      {% if upcoming_leaves %}
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:8px;">Upcoming Leaves:</div>
+      {% for d in upcoming_leaves %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fef3c7;border-radius:8px;margin-bottom:6px;font-size:12px;font-weight:600;color:#92400e;">
+        📅 {{ d }}
+        <form method="POST" action="/doctor/set-leave" style="margin:0;">
+          <input type="hidden" name="username" value="{{ doctor.username }}">
+          <input type="hidden" name="action" value="remove_leave">
+          <input type="hidden" name="leave_date" value="{{ d }}">
+          <button type="submit" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:14px;font-weight:800;" aria-label="Remove leave">✕</button>
+        </form>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Break Modal -->
+<div id="breakModal" class="modal-ov" role="dialog" aria-modal="true" aria-labelledby="breakModalTitle">
+  <div class="modal-box">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,#ec4899,#be185d);">
+      <h3 id="breakModalTitle">⏸️ Set Break Time</h3>
+      <button class="modal-close" onclick="closeModal('breakModal')" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/doctor/set-leave">
+        <input type="hidden" name="username" value="{{ doctor.username }}">
+        <input type="hidden" name="action" value="set_break">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label for="breakStart">Break Start</label>
+            <input type="time" id="breakStart" name="break_start" value="{{ break_start }}">
+          </div>
+          <div class="form-group">
+            <label for="breakEnd">Break End</label>
+            <input type="time" id="breakEnd" name="break_end" value="{{ break_end }}">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn-sec" onclick="closeModal('breakModal')">Cancel</button>
+          <button type="submit" class="btn-pri">✅ Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NOTIFICATION PANEL ═══ -->
+<div id="notifOverlay" onclick="closeNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199;"></div>
+<div id="notifPanel" class="notif-panel" role="region" aria-label="Notifications">
+  <div class="notif-hdr">
+    <div class="notif-hdr-title">🔔 Notifications</div>
+    <button class="notif-close" onclick="closeNotifPanel()" aria-label="Close notifications">✕</button>
+  </div>
+  <div class="notif-body" id="notifList">
+    {% if pending %}
+      {% for a in pending %}
+      <div class="notif-item">
+        <div class="notif-icon">📅</div>
+        <div>
+          <div class="notif-title">New Appointment</div>
+          <div class="notif-sub">{{ a.patient_name }} — {{ a.time }} · Token #{{ a.token }}</div>
+          <div class="notif-date">{{ a.date }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="notif-empty">
+        <div style="font-size:32px;margin-bottom:8px;">🔔</div>
+        No new notifications
+      </div>
+    {% endif %}
+  </div>
 </div>
 
 <script>
-/* ── Theme ── */
+// ── THEME TOGGLE ──
 function toggleTheme() {
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
-  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  var isDark = document.body.classList.toggle('dark');
+  var btn = document.getElementById('themeToggle');
+  btn.textContent = isDark ? '☀️' : '🌙';
+  btn.style.background = isDark ? '#334155' : '#f8fafc';
+  try { localStorage.setItem('doc-theme', isDark ? 'dark' : 'light'); } catch(e) {}
 }
-(function(){
-  const saved = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  document.getElementById('themeIcon').textContent = saved === 'dark' ? '🌙' : '☀️';
+(function() {
+  try {
+    if (localStorage.getItem('doc-theme') === 'dark') {
+      document.body.classList.add('dark');
+      var btn = document.getElementById('themeToggle');
+      if (btn) { btn.textContent = '☀️'; btn.style.background = '#334155'; }
+    }
+  } catch(e) {}
 })();
 
-/* ── Canvas Background ── */
-const canvas = document.getElementById('bgCanvas');
-const ctx = canvas.getContext('2d');
-let W, H;
-function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-resize(); window.addEventListener('resize', resize);
-const parts = Array.from({length:80}, () => ({
-  x: Math.random()*innerWidth, y: Math.random()*innerHeight,
-  r: Math.random()*1.5+.3,
-  vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
-  a: Math.random()*.4+.1,
-  c:['#c4b8f0','#a99ee0','#d4ceff','#9087d8'][Math.floor(Math.random()*4)],
-  phase: Math.random()*Math.PI*2
-}));
-const SYMBOLS = ['⚕','✚','💊','🩺','🔬'];
-const floats = Array.from({length:8}, () => ({
-  x:Math.random()*innerWidth, y:Math.random()*innerHeight,
-  sym:SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)],
-  size:Math.random()*10+8,
-  vx:(Math.random()-.5)*.2, vy:(Math.random()-.5)*.2,
-  a:Math.random()*.12+.04,
-  rot:Math.random()*Math.PI*2, rotV:(Math.random()-.5)*.005
-}));
-let tick = 0;
-function drawBg(){
-  ctx.clearRect(0,0,W,H); tick+=.006;
-  parts.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy;
-    if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle=p.c; ctx.globalAlpha=p.a*(.5+.5*Math.sin(tick*1.5+p.phase)); ctx.fill();
-  });
-  ctx.globalAlpha=1;
-  for(let i=0;i<parts.length;i++) for(let j=i+1;j<parts.length;j++){
-    const dx=parts[i].x-parts[j].x, dy=parts[i].y-parts[j].y, d=Math.sqrt(dx*dx+dy*dy);
-    if(d<90){ ctx.beginPath(); ctx.moveTo(parts[i].x,parts[i].y); ctx.lineTo(parts[j].x,parts[j].y);
-      ctx.strokeStyle=`rgba(196,184,240,${.08*(1-d/90)})`; ctx.lineWidth=.4; ctx.stroke(); }
-  }
-  floats.forEach(f=>{
-    f.x+=f.vx; f.y+=f.vy; f.rot+=f.rotV;
-    if(f.x<-40)f.x=W+40; if(f.x>W+40)f.x=-40; if(f.y<-40)f.y=H+40; if(f.y>H+40)f.y=-40;
-    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
-    ctx.globalAlpha=f.a*(.6+.4*Math.sin(tick+f.x*.01));
-    ctx.font=`${f.size}px serif`; ctx.fillStyle='rgba(255,255,255,0.8)';
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(f.sym,0,0);
-    ctx.restore();
-  });
-  ctx.globalAlpha=1;
-  requestAnimationFrame(drawBg);
+// ── MOBILE SIDEBAR ──
+function toggleMobDoc() {
+  var sb = document.getElementById('docSidebar');
+  var ov = document.getElementById('mobOverlayDoc');
+  sb.classList.toggle('mob-open');
+  ov.style.display = sb.classList.contains('mob-open') ? 'block' : 'none';
 }
-drawBg();
+function closeMobDoc() {
+  document.getElementById('docSidebar').classList.remove('mob-open');
+  document.getElementById('mobOverlayDoc').style.display = 'none';
+}
+(function() {
+  var btn = document.getElementById('mobHamDoc');
+  function check() { if (btn) btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; }
+  check();
+  window.addEventListener('resize', check);
+})();
 
-/* ── Chart ── */
-new Chart(document.getElementById('statsChart'), {
-    type: 'doughnut',
-    data: {
-        labels: ['Pending','Completed','Cancelled'],
-        datasets: [{
-            data: [{{ pending_appointments }}, {{ completed_appointments }}, {{ appointments|selectattr("status","equalto","Cancelled")|list|length }}],
-            backgroundColor: ['#FFC107','#4CAF50','#F44336'],
-            borderWidth: 3, borderColor: 'rgba(255,255,255,0.1)'
-        }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-        plugins: { legend: { position:'bottom', labels:{ padding:20, font:{ size:13, family:'Outfit' }, color:'#9b97c8' } } } }
+// ── NOTIFICATION PANEL ──
+function openNotifPanel() {
+  document.getElementById('notifPanel').classList.add('open');
+  document.getElementById('notifOverlay').style.display = 'block';
+}
+function closeNotifPanel() {
+  document.getElementById('notifPanel').classList.remove('open');
+  document.getElementById('notifOverlay').style.display = 'none';
+}
+document.getElementById('bellBtn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  var panel = document.getElementById('notifPanel');
+  if (panel.classList.contains('open')) { closeNotifPanel(); } else { openNotifPanel(); }
 });
 
-/* ── Patient lookup ── */
-let patientLookupTimer = null;
-function lookupPatient(val) {
-    const div = document.getElementById('patientLookupResult'); if (!val||val.trim().length < 2) { div.innerHTML = ''; return; }
-    clearTimeout(patientLookupTimer);
-    patientLookupTimer = setTimeout(() => {
-        fetch('/search_patient_username', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: 'username=' + encodeURIComponent(val.trim()) })
-        .then(r => r.json()).then(data => {
-            div.innerHTML = data.status === 'found'
-                ? '<span style="color:#4CAF50;">✅ Patient found: <b>' + data.name + '</b></span>'
-                : '<span style="color:#F44336;">❌ No patient found with this username</span>';
-        });
-    }, 400);
-}
+// ── MODAL ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-ov').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-ov.open').forEach(function(m) { m.classList.remove('open'); });
+    closeNotifPanel();
+  }
+});
 
-/* ── Status toggle ── */
-function submitStatus(val) { document.getElementById('statusInput').value = val; document.getElementById('statusForm').submit(); }
-
-/* ── Break preview ── */
-function updateBreakPreview() {
-    const s = document.getElementById('breakStart').value; const e = document.getElementById('breakEnd').value;
-    document.getElementById('breakPreview').textContent = '🍽️ Break: ' + (s||'--') + ' – ' + (e||'--');
-}
-
-/* ── Live status display ── */
-const _docName = "{{ doctor.name }}";
-function fetchLiveStatus() {
-    fetch('/api/doctor-status/' + encodeURIComponent(_docName))
-    .then(r => r.json()).then(data => {
-        const emoji  = { available:'🟢', on_break:'🟡', on_leave:'🔴', offline:'⚫' };
-        const label  = { available:'Available', on_break:'On Break', on_leave:'On Leave', offline:'Offline' };
-        const pill   = { available:'status-available', on_break:'status-break', on_leave:'status-leave', offline:'status-offline' };
-        const dot    = { available:'dot-green', on_break:'dot-yellow', on_leave:'dot-red', offline:'dot-grey' };
-        const s = data.status;
-        document.getElementById('liveStatusEmoji').textContent = emoji[s] || '🟢';
-        document.getElementById('liveStatusLabel').textContent = label[s] || 'Available';
-        document.getElementById('liveStatusPill').innerHTML =
-            '<span class="status-pill ' + (pill[s]||'status-available') + '">'+
-            '<span class="status-dot ' + (dot[s]||'dot-green') + '"></span>'+(label[s]||'Available')+'</span>';
-    }).catch(() => {});
-}
-fetchLiveStatus(); setInterval(fetchLiveStatus, 15000);
-
-/* ── Mini Calendar ── */
-const leaveDates = new Set({{ leave_dates | tojson }});
-const today = new Date();
-let calYear = today.getFullYear(); let calMonth = today.getMonth();
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-function pad(n){ return String(n).padStart(2,'0'); }
-function dateStr(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
-function renderCal() {
-    document.getElementById('calMonthLabel').textContent = MONTHS[calMonth] + ' ' + calYear;
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-    const todayStr = dateStr(today.getFullYear(), today.getMonth(), today.getDate());
-    let html = '<thead><tr>'; DAYS.forEach(d => html += '<th>' + d + '</th>'); html += '</tr></thead><tbody><tr>';
-    for(let i=0; i<firstDay; i++) html += '<td></td>';
-    let col = firstDay;
-    for(let d=1; d<=daysInMonth; d++){
-        if(col === 7){ html += '</tr><tr>'; col=0; }
-        const ds = dateStr(calYear, calMonth, d);
-        const isToday = ds === todayStr; const isLeave = leaveDates.has(ds); const isPast = ds < todayStr && !isToday;
-        let cls = 'cal-day';
-        if(isToday) cls += ' today'; if(isLeave) cls += ' on-leave'; if(isPast) cls += ' past';
-        const tip = isLeave ? 'Click to REMOVE leave on ' + ds : (isPast ? '' : 'Click to ADD leave on ' + ds);
-        html += '<td><span class="' + cls + '" title="' + tip + '" onclick="toggleLeave(\''+ds+'\',\''+(isLeave?'remove_leave':'add_leave')+'\','+isPast+')">' + d + '</span></td>';
-        col++;
-    }
-    while(col < 7){ html += '<td></td>'; col++; } html += '</tr></tbody>';
-    document.getElementById('miniCal').innerHTML = html;
-}
-function calPrev(){ if(calMonth===0){calMonth=11;calYear--;}else{calMonth--;} renderCal(); }
-function calNext(){ if(calMonth===11){calMonth=0;calYear++;}else{calMonth++;} renderCal(); }
-function toggleLeave(ds, action, isPast) {
-    if(isPast && action === 'add_leave') return;
-    document.getElementById('leaveAction').value = action; document.getElementById('leaveFormDate').value = ds;
-    document.getElementById('addLeaveForm').submit();
-}
-renderCal();
-
-
-/* ════════════════════════════════════════════════════════════════════════
-   🔔 NOTIFICATION SYSTEM
-   ─────────────────────────────────────────────────────────────────────
-   • Polls /api/doctor-appointments/<username> every 8 seconds
-   • Detects brand-new appointment IDs not seen before
-   • Rings + vibrates the bell button
-   • Shows a bounce-in toast at the bottom
-   • Adds an item to the slide-out notification panel
-   • Badge count shown on bell; turns green glow when unread exist
-════════════════════════════════════════════════════════════════════════ */
-
-const _DOCTOR_USERNAME = "{{ doctor.username }}";
-
-let _knownApptIds   = new Set();
-let _notifications  = [];
-let _unreadCount    = 0;
-let _notifPanelOpen = false;
-let _toastTimer     = null;
-let _notifIdCounter = 0;
-
-/* Seed known IDs from server-side rendered appointments so we don't
-   fire spurious alerts for appointments that already existed on page load */
-(function seedKnownIds(){
-    {% for a in appointments %}
-    _knownApptIds.add("{{ a._id }}");
-    {% endfor %}
-})();
-
-/* ───────────────── Panel open / close ───────────────── */
-function toggleNotifPanel(){
-    _notifPanelOpen ? closeNotifPanel() : openNotifPanel();
-}
-function openNotifPanel(){
-    _notifPanelOpen = true;
-    document.getElementById('notifPanel').classList.add('open');
-    document.getElementById('notifOverlay').classList.add('active');
-    document.body.style.overflow = 'hidden';
-    markAllRead();
-}
-function closeNotifPanel(){
-    _notifPanelOpen = false;
-    document.getElementById('notifPanel').classList.remove('open');
-    document.getElementById('notifOverlay').classList.remove('active');
-    document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeNotifPanel(); });
-
-/* ───────────────── Badge & glow update ─────────────────
-   When there are unread notifications the bell button gets
-   a green glow ring so it's obvious even without looking
-   at the badge number.
-──────────────────────────────────────────────────────── */
-function updateBadge(){
-    const badge = document.getElementById('notifBadge');
-    const bell  = document.getElementById('notifBellBtn');
-
-    if(_unreadCount > 0){
-        badge.textContent = _unreadCount > 99 ? '99+' : _unreadCount;
-        badge.classList.remove('hidden');
-        bell.classList.add('has-new');          /* green glow ring */
+// ── PATIENT SEARCH ──
+function searchPatient(val) {
+  var res = document.getElementById('prescPatResult');
+  if (!val || val.length < 2) { res.innerHTML = ''; return; }
+  fetch('/search_patient_username', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=' + encodeURIComponent(val)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.status === 'found') {
+      res.innerHTML = '<span style="color:#10b981;font-weight:700;">✅ ' + d.name + '</span>';
     } else {
-        badge.classList.add('hidden');
-        bell.classList.remove('has-new');
+      res.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ Patient not found</span>';
     }
-
-    const sub = document.getElementById('notifSubtitle');
-    if(sub){
-        sub.textContent = _unreadCount > 0
-            ? _unreadCount + ' unread notification' + (_unreadCount > 1 ? 's' : '')
-            : 'All caught up!';
-    }
+  })
+  .catch(function() {});
 }
 
-/* ───────────────── Render notification list ───────────────── */
-function renderNotifList(){
-    const list  = document.getElementById('notifList');
-    const empty = document.getElementById('notifEmpty');
-
-    list.querySelectorAll('.notif-item').forEach(el => el.remove());
-
-    if(_notifications.length === 0){
-        empty.style.display = 'block';
-        return;
-    }
-    empty.style.display = 'none';
-
-    _notifications.slice().reverse().forEach((n, idx) => {
-        const item = document.createElement('div');
-        item.className = 'notif-item' + (n.unread ? ' unread' : '');
-        item.dataset.nid = n.id;
-        item.style.animationDelay = (idx * 0.04) + 's';
-
-        const iconClass = n.type === 'cancel' ? 'notif-icon-cancel'
-                        : n.type === 'resched' ? 'notif-icon-resched'
-                        : 'notif-icon-new';
-        const icon = n.type === 'cancel' ? '❌'
-                   : n.type === 'resched' ? '🔁'
-                   : '📅';
-
-        item.innerHTML =
-            (n.unread ? '<div class="notif-unread-dot"></div>'
-                      : '<div style="width:8px;flex-shrink:0;margin-top:6px;"></div>') +
-            `<div class="notif-icon-wrap ${iconClass}">${icon}</div>
-             <div class="notif-body">
-               <div class="notif-msg">${n.message}</div>
-               <div class="notif-meta">
-                 <span class="notif-time">🕐 ${n.time}</span>
-                 ${n.token ? '<span class="notif-token">Token #' + n.token + '</span>' : ''}
-               </div>
-             </div>
-             <button class="notif-dismiss-btn" onclick="dismissNotif('${n.id}')" title="Dismiss">✕</button>`;
-
-        list.appendChild(item);
-    });
+// ── SEARCH FILTER ──
+function handleSearch(val) {
+  var v = val.toLowerCase().trim();
+  document.querySelectorAll('.appt-row, .queue-row, .pat-row').forEach(function(row) {
+    var text = row.textContent.toLowerCase();
+    row.style.display = (!v || text.includes(v)) ? '' : 'none';
+  });
 }
 
-/* ───────────────── Add a new notification ───────────────── */
-function addNotification(type, message, token){
-    _notifIdCounter++;
-    const now     = new Date();
-    const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    const notif   = { id:'n'+_notifIdCounter, type, message, token:token||'', time:timeStr, unread:true };
+// ── LIVE POLL (every 8s) ──
+var _knownIds = new Set();
+{{ appointments | tojson | safe }}.forEach(function(a) { _knownIds.add(a._id); });
 
-    _notifications.push(notif);
-    if(!_notifPanelOpen) _unreadCount++;
-
-    updateBadge();
-    renderNotifList();
-    triggerBellAnimation();
-    showToast(message, token);
-}
-
-/* ───────────────── Bell ring + vibration ─────────────────
-   • CSS keyframe animation shakes the bell emoji
-   • navigator.vibrate gives a short tactile buzz on mobile
-   • The button gets a green pulse ring (has-new CSS class)
-──────────────────────────────────────────────────────── */
-function triggerBellAnimation(){
-    const bell = document.getElementById('bellIcon');
-    const btn  = document.getElementById('notifBellBtn');
-
-    /* Remove then re-add class to restart animation each time */
-    bell.classList.remove('ringing');
-    void bell.offsetWidth;              /* force reflow to restart CSS animation */
-    bell.classList.add('ringing');
-    setTimeout(() => bell.classList.remove('ringing'), 900);
-
-    /* Haptic vibration on devices that support it (Android / some iOS) */
-    if(navigator.vibrate){
-        /* Pattern: vibrate 120ms, pause 60ms, vibrate 80ms, pause 60ms, vibrate 120ms */
-        navigator.vibrate([120, 60, 80, 60, 120]);
-    }
-
-    /* Flash the button background briefly for extra attention */
-    btn.style.background = 'rgba(76,175,80,0.4)';
-    btn.style.borderColor = '#4CAF50';
-    setTimeout(() => {
-        btn.style.background = '';
-        btn.style.borderColor = '';
-    }, 600);
-}
-
-/* ───────────────── Toast popup ───────────────── */
-function showToast(message, token){
-    clearTimeout(_toastTimer);
-    document.getElementById('notifToastTitle').textContent = '🔔 New Appointment Booked!';
-    document.getElementById('notifToastMsg').textContent   =
-        message + (token ? '  •  Token #' + token : '');
-
-    const toast = document.getElementById('notifToast');
-    toast.classList.add('show');
-    _toastTimer = setTimeout(hideToast, 6000);
-}
-function hideToast(){
-    document.getElementById('notifToast').classList.remove('show');
-}
-
-/* ───────────────── Mark all read ───────────────── */
-function markAllRead(){
-    _notifications.forEach(n => n.unread = false);
-    _unreadCount = 0;
-    updateBadge();
-    renderNotifList();
-}
-
-/* ───────────────── Dismiss single notification ───────────────── */
-function dismissNotif(nid){
-    const idx = _notifications.findIndex(n => n.id === nid);
-    if(idx === -1) return;
-    if(_notifications[idx].unread && _unreadCount > 0) _unreadCount--;
-    _notifications.splice(idx, 1);
-    updateBadge();
-    renderNotifList();
-}
-
-/* ───────────────── Clear all ───────────────── */
-function clearAllNotifs(){
-    _notifications = [];
-    _unreadCount   = 0;
-    updateBadge();
-    renderNotifList();
-}
-
-/* ───────────────── Poll backend every 8 seconds ─────────────────
-   Calls /api/doctor-appointments/<username> (added in app.py).
-   Any appointment ID not in _knownApptIds is brand-new → notify.
-──────────────────────────────────────────────────────────────── */
-function pollNewAppointments(){
-    fetch('/api/doctor-appointments/' + encodeURIComponent(_DOCTOR_USERNAME))
-        .then(r => { if(!r.ok) throw new Error('non-ok'); return r.json(); })
-        .then(data => {
-            if(!data || !data.appointments) return;
-            data.appointments.forEach(appt => {
-                const id = String(appt._id || appt.id || '');
-                if(!id) return;
-
-                if(!_knownApptIds.has(id)){
-                    /* Brand-new appointment — fire notification */
-                    _knownApptIds.add(id);
-
-                    const patient = appt.username || 'A patient';
-                    const time    = appt.time  || '';
-                    const date    = appt.date  || '';
-                    const token   = appt.token || '';
-
-                    const msg = patient + ' booked an appointment'
-                        + (date ? ' on ' + date : '')
-                        + (time ? ' at ' + time : '') + '.';
-
-                    addNotification('new', msg, token);
-                }
-            });
-        })
-        .catch(() => {
-            /* Silently ignore network / server errors — no console spam */
-        });
-}
-
-/* Start polling after 4 seconds (let page fully settle), then every 8s */
-setTimeout(() => {
-    pollNewAppointments();
-    setInterval(pollNewAppointments, 8000);
-}, 4000);
-
-/* Initial render */
-renderNotifList();
-updateBadge();
+setInterval(function() {
+  fetch('/api/doctor-appointments/{{ doctor.username }}')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      (d.appointments || []).forEach(function(a) {
+        if (!_knownIds.has(a.id)) {
+          _knownIds.add(a.id);
+          document.getElementById('notifDot').style.display = 'block';
+        }
+      });
+    })
+    .catch(function() {});
+}, 8000);
 </script>
+<script src="/static/pwa.js"></script>
 </body>
 </html>

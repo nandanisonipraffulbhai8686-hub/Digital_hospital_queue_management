@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment variables (NEVER push this)
+.env
+
+# VS Code
+.vscode/
+
+# Uploads (user data)
+static/uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

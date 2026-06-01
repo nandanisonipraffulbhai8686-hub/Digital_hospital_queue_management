@@ -1,20 +1,126 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Ever Well</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6C63FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Ever Well">
+    <link rel="apple-touch-icon" href="/static/images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Poppins', sans-serif; min-height: 100vh;
+            font-family: "Poppins", sans-serif; min-height: 100vh;
             background: linear-gradient(135deg, #6a4fd8 0%, #7c5ce8 30%, #9b6de8 60%, #b36fd4 100%);
-            padding: 20px;
+            display: flex;
         }
 
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 240px; min-height: 100vh;
+            background: rgba(30, 18, 80, 0.72);
+            backdrop-filter: blur(18px);
+            border-right: 1px solid rgba(255,255,255,0.12);
+            display: flex; flex-direction: column;
+            position: fixed; top: 0; left: 0; z-index: 100;
+            transition: width 0.3s ease; overflow: hidden;
+            box-shadow: 4px 0 32px rgba(0,0,0,0.25);
+        }
+        .sidebar.collapsed { width: 64px; }
+
+        .sidebar-profile {
+            padding: 22px 16px 18px; display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.12); flex-shrink: 0;
+        }
+        .sidebar-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.18);
+            border: 2px solid rgba(255,255,255,0.35);
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+            flex-shrink: 0; position: relative;
+        }
+        .sidebar-avatar::after {
+            content: ""; width: 10px; height: 10px; background: #22c55e; border-radius: 50%;
+            border: 2px solid rgba(30,18,80,0.9); position: absolute; bottom: 1px; right: 1px;
+        }
+        .sidebar-profile-info { overflow: hidden; transition: opacity 0.25s; }
+        .sidebar.collapsed .sidebar-profile-info { opacity: 0; pointer-events: none; }
+        .sidebar-name { font-size: 13px; font-weight: 700; color: white; white-space: nowrap; }
+        .sidebar-role { font-size: 10px; color: rgba(255,255,255,0.55); white-space: nowrap; margin-top: 2px; }
+
+        .sidebar-section-label {
+            font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.38);
+            text-transform: uppercase; letter-spacing: 1.4px;
+            padding: 16px 20px 6px; white-space: nowrap; transition: opacity 0.25s;
+        }
+        .sidebar.collapsed .sidebar-section-label { opacity: 0; }
+
+        .sidebar-nav { flex: 1; overflow-y: auto; padding-bottom: 10px; }
+        .sidebar-nav::-webkit-scrollbar { width: 3px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 20px; cursor: pointer; text-decoration: none;
+            color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500;
+            transition: all 0.2s; border-left: 3px solid transparent;
+            white-space: nowrap; position: relative;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; border-left-color: rgba(255,255,255,0.4); }
+        .nav-item.active { background: rgba(255,255,255,0.18); color: white; border-left-color: white; font-weight: 700; }
+        .nav-item .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+        .nav-item .nav-label { transition: opacity 0.25s; }
+        .sidebar.collapsed .nav-item .nav-label { opacity: 0; pointer-events: none; }
+        .nav-item .nav-badge {
+            margin-left: auto; background: rgba(255,255,255,0.2); color: white;
+            font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+            transition: opacity 0.25s; border: 1px solid rgba(255,255,255,0.25);
+        }
+        .nav-item.active .nav-badge { background: white; color: #6a4fd8; border-color: white; }
+        .sidebar.collapsed .nav-item .nav-badge { opacity: 0; }
+
+        .sidebar.collapsed .nav-item:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; left: 68px; top: 50%; transform: translateY(-50%);
+            background: rgba(30,18,80,0.95); color: white; font-size: 12px; font-weight: 600;
+            padding: 6px 12px; border-radius: 8px; white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.35); pointer-events: none; z-index: 200;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.12); flex-shrink: 0;
+        }
+        .sidebar-toggle {
+            width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.75); padding: 8px; border-radius: 8px;
+            cursor: pointer; font-size: 14px; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: "Poppins", sans-serif;
+        }
+        .sidebar-toggle:hover { background: rgba(255,255,255,0.16); color: white; }
+        .sidebar-toggle .toggle-label { font-size: 11px; font-weight: 600; transition: opacity 0.25s; }
+        .sidebar.collapsed .sidebar-toggle .toggle-label { opacity: 0; width: 0; overflow: hidden; }
+
+        /* ── MAIN CONTENT ── */
+        .main-content { margin-left: 240px; flex: 1; padding: 24px; transition: margin-left 0.3s ease; min-width: 0; position: relative; z-index: 1; }
+        .main-content.expanded { margin-left: 64px; }
+
+        /* ── NOTIFICATION OVERLAY BACKDROP ── */
+        .notif-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 8998;
+        }
+        .notif-backdrop.open { display: block; }
+
+        /* ── PAGE SECTIONS ── */
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeUp 0.3s ease; }
+
         /* ── FLASH ── */
-        .flash { padding: 13px 18px; border-radius: 12px; margin-bottom: 14px;
-                 font-size: 14px; font-weight: 600; color: white; animation: fadeUp 0.4s ease; }
+        .flash { padding: 13px 18px; border-radius: 12px; margin-bottom: 14px; font-size: 14px; font-weight: 600; color: white; animation: fadeUp 0.4s ease; }
         .flash.success { background: #22c55e; }
         .flash.error   { background: #ff4d4d; }
         .flash.warning { background: #ff9500; }
@@ -22,52 +128,113 @@
 
         /* ── HEADER ── */
         .header {
-            background: rgba(255,255,255,0.18); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.25); border-radius: 18px;
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.22); border-radius: 18px;
             padding: 18px 28px; display: flex; align-items: center;
             justify-content: space-between; margin-bottom: 22px;
         }
         .header-left h1 { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
-        .header-left p  { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 3px; }
+        .header-left p  { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 3px; }
         .header-right   { display: flex; align-items: center; gap: 10px; }
-        .btn-logout {
-            background: #ff4d4d; color: white; border: none; border-radius: 10px;
-            padding: 10px 22px; font-family: 'Poppins', sans-serif; font-size: 13px;
-            font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
-        }
+        .btn-logout { background: #ff4d4d; color: white; border: none; border-radius: 10px; padding: 10px 22px; font-family: "Poppins",sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
         .btn-logout:hover { background: #e03e3e; }
-        .icon-circle { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
-        .icon-circle.bell   { background: #ff9500; }
-        .icon-circle.avatar { background: #f5c518; }
+        .icon-circle { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; flex-shrink: 0; }
+        .icon-circle.bell   { background: #ff9500; position: relative; }
+        .icon-circle.avatar { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); }
+
+        /* ── NOTIFICATION BELL ── */
+        .notif-wrapper { position: relative; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #ff4d4d; color: white; font-size: 9px; font-weight: 800;
+            min-width: 18px; height: 18px; border-radius: 10px; padding: 0 4px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            animation: pulse-badge 2s infinite;
+            z-index: 10;
+        }
+        @keyframes pulse-badge {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
+            50%      { box-shadow: 0 0 0 6px rgba(255,77,77,0); }
+        }
+
+        .notif-dropdown {
+            display: none; position: fixed; top: 74px; right: 28px;
+            width: 360px; background: #ffffff; border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.28), 0 4px 16px rgba(106,79,216,0.15);
+            z-index: 9999; overflow: hidden; animation: fadeUp 0.2s ease;
+            border: 1px solid rgba(124,92,232,0.12);
+        }
+        .notif-dropdown.open { display: block; }
+
+        .notif-header {
+            padding: 16px 18px 12px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #f0eeff; background: #faf8ff;
+        }
+        .notif-header-title { font-size: 15px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 6px; }
+        .notif-mark-all { font-size: 11px; color: #7c5ce8; font-weight: 600; cursor: pointer; background: none; border: none; font-family: "Poppins",sans-serif; padding: 4px 10px; border-radius: 8px; transition: background 0.2s; }
+        .notif-mark-all:hover { background: #ede8ff; }
+
+        .notif-tabs { display: flex; border-bottom: 1px solid #f0eeff; background: #faf8ff; }
+        .notif-tab {
+            flex: 1; padding: 9px 6px; text-align: center; font-size: 11px; font-weight: 600;
+            color: #aaa; cursor: pointer; border-bottom: 2px solid transparent;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .notif-tab.active { color: #7c5ce8; border-bottom-color: #7c5ce8; background: white; }
+        .notif-tab:hover:not(.active) { color: #7c5ce8; background: #f3f0ff; }
+
+        .notif-list { max-height: 300px; overflow-y: auto; background: white; }
+        .notif-list::-webkit-scrollbar { width: 4px; }
+        .notif-list::-webkit-scrollbar-thumb { background: #ede8ff; border-radius: 4px; }
+
+        .notif-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 16px; border-bottom: 1px solid #f5f3ff;
+            transition: background 0.15s; cursor: pointer; background: white;
+        }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: #f9f7ff; }
+        .notif-item.unread { background: #fdf8ff; border-left: 3px solid #7c5ce8; }
+        .notif-item:not(.unread) { border-left: 3px solid transparent; }
+        .notif-icon-wrap {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+        }
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-title { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+        .notif-desc  { font-size: 11px; color: #777; margin-top: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .notif-time  { font-size: 10px; color: #bbb; margin-top: 4px; }
+        .notif-unread-dot { width: 7px; height: 7px; border-radius: 50%; background: #7c5ce8; flex-shrink: 0; margin-top: 6px; }
+
+        .notif-empty { padding: 36px 16px; text-align: center; color: #bbb; font-size: 12px; line-height: 1.8; }
+        .notif-footer { padding: 10px 16px; border-top: 1px solid #f0eeff; text-align: center; background: #faf8ff; }
+        .notif-footer a { font-size: 12px; color: #7c5ce8; font-weight: 600; text-decoration: none; }
+        .notif-footer a:hover { text-decoration: underline; }
 
         /* ── STATS GRID ── */
         .stats-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 14px; margin-bottom: 22px; }
         .stat-card {
-            background: rgba(255,255,255,0.85); border-radius: 18px; padding: 22px 16px 18px;
+            background: rgba(255,255,255,0.88); border-radius: 18px; padding: 22px 16px 18px;
             text-align: center; backdrop-filter: blur(8px);
             transition: transform 0.2s, box-shadow 0.2s; animation: fadeUp 0.5s ease both;
+            cursor: pointer;
         }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.18); }
         .stat-icon  { font-size: 28px; margin-bottom: 8px; }
         .stat-value { font-size: 32px; font-weight: 800; color: #1a1a2e; line-height: 1; margin-bottom: 6px; }
         .stat-label { font-size: 12px; color: #666; font-weight: 500; }
         .stat-card.emerg .stat-value { color: #ff4d4d; }
-        .status-pill {
-            display: inline-flex; align-items: center; gap: 5px;
-            background: rgba(34,197,94,0.12); color: #16a34a;
-            border: 1.5px solid #22c55e; border-radius: 20px;
-            font-size: 12px; font-weight: 600; padding: 3px 12px; margin-top: 6px;
-        }
-        .dot-green { width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
-                     box-shadow: 0 0 8px #22c55e; animation: pulse-dot 1.5s infinite; }
 
         /* ── WHITE CARD ── */
-        .white-card { background: rgba(255,255,255,0.92); border-radius: 18px; padding: 24px; backdrop-filter: blur(8px); animation: fadeUp 0.5s ease both; }
+        .white-card { background: rgba(255,255,255,0.92); border-radius: 18px; padding: 24px; backdrop-filter: blur(8px); animation: fadeUp 0.4s ease both; }
         .card-title { font-size: 16px; font-weight: 700; color: #6a4fd8; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
 
         /* ── GRIDS ── */
-        .mid-grid    { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 22px; }
-        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+        .two-col   { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 22px; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+        .two-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
 
         /* ── FORMS ── */
         .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -76,16 +243,14 @@
         label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
         input[type="text"], input[type="password"], select, input[list] {
             background: #f3f0ff; border: 1.5px solid #e0d8ff; border-radius: 10px;
-            padding: 9px 12px; font-family: 'Poppins', sans-serif; font-size: 12px;
+            padding: 9px 12px; font-family: "Poppins",sans-serif; font-size: 12px;
             color: #1a1a2e; outline: none; transition: border-color 0.2s; width: 100%;
         }
         input:focus, select:focus { border-color: #7c5ce8; background: #ede8ff; }
         input::placeholder { color: #aaa; }
-        select option { background: white; }
-
         .btn-add {
             width: 100%; padding: 11px; border: none; border-radius: 12px;
-            font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
+            font-family: "Poppins",sans-serif; font-size: 13px; font-weight: 700;
             cursor: pointer; transition: all 0.2s; margin-top: 4px;
             display: flex; align-items: center; justify-content: center; gap: 6px;
         }
@@ -99,10 +264,7 @@
         .list-scroll { max-height: 240px; overflow-y: auto; padding-right: 2px; }
         .list-scroll::-webkit-scrollbar { width: 4px; }
         .list-scroll::-webkit-scrollbar-thumb { background: #ede8ff; border-radius: 4px; }
-        .list-item {
-            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
-            background: #f3f0ff; border-radius: 10px; margin-bottom: 6px; transition: background 0.2s;
-        }
+        .list-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #f3f0ff; border-radius: 10px; margin-bottom: 6px; transition: background 0.2s; }
         .list-item:hover { background: #ede8ff; }
         .list-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
         .list-info  { flex: 1; min-width: 0; }
@@ -114,41 +276,18 @@
         .pill-red    { background: rgba(255,77,77,0.12);   color: #ff4d4d; }
         .pill-orange { background: rgba(255,149,0,0.12);   color: #e07900; }
         .pill-blue   { background: rgba(59,130,246,0.12);  color: #1d4ed8; }
-        .btn-del {
-            width: 24px; height: 24px; border-radius: 50%; background: rgba(255,77,77,0.1);
-            border: none; color: #ff4d4d; cursor: pointer; font-size: 12px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
-        }
+        .btn-del { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,77,77,0.1); border: none; color: #ff4d4d; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
         .btn-del:hover { background: #ff4d4d; color: white; }
 
         /* ── EMERGENCY ── */
-        .emergency-item {
-            display: flex; align-items: flex-start; gap: 10px; background: #fff0f0;
-            border: 1.5px solid #ffcdd2; border-radius: 12px; padding: 12px; margin-bottom: 8px;
-            animation: blink 2s infinite;
-        }
-        .em-icon  { width: 34px; height: 34px; border-radius: 10px; background: #ffe0e0; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-        .em-name  { font-size: 13px; font-weight: 700; color: #cc0000; }
+        .emergency-item { display: flex; align-items: flex-start; gap: 10px; background: #fff0f0; border: 1.5px solid #ffcdd2; border-radius: 12px; padding: 12px; margin-bottom: 8px; animation: blink 2s infinite; }
+        .em-icon { width: 34px; height: 34px; border-radius: 10px; background: #ffe0e0; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .em-name { font-size: 13px; font-weight: 700; color: #cc0000; }
         .em-issue { font-size: 11px; color: #888; margin-top: 2px; }
-        .em-time  { margin-left: auto; font-size: 10px; font-weight: 700; color: #ff4d4d; white-space: nowrap; }
-
-        /* ── CHART BARS ── */
-        .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; margin-top: 10px; }
-        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .bar { width: 100%; border-radius: 6px 6px 0 0; background: rgba(124,92,232,0.2); }
-        .bar.active { background: linear-gradient(180deg,#7c5ce8,rgba(124,92,232,0.4)); }
-        .bar-label { font-size: 9px; color: #aaa; }
-
-        /* ── QUICK ACTIONS ── */
-        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-        .qa-btn { background: #f3f0ff; border: none; border-radius: 12px; padding: 14px 10px; cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Poppins',sans-serif; text-decoration: none; display: block; }
-        .qa-btn:hover { background: #ede8ff; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(124,92,232,0.2); }
-        .qa-icon  { font-size: 20px; margin-bottom: 6px; }
-        .qa-label { font-size: 11px; font-weight: 600; color: #6a4fd8; }
 
         /* ── SECTION LABEL ── */
         .section-label { font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .section-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.2); }
+        .section-label::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.2); }
 
         /* ── TABLE ── */
         .data-table { width: 100%; border-collapse: collapse; }
@@ -160,33 +299,106 @@
         .th-green  { background: linear-gradient(135deg,#22c55e,#16a34a); }
 
         /* ── ACTIVITY ── */
-        .activity-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0eeff; }
+        .activity-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f0eeff; }
         .activity-item:last-child { border-bottom: none; }
         .act-dot  { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
         .act-text { font-size: 12px; color: #555; line-height: 1.5; }
         .act-text strong { color: #1a1a2e; font-weight: 600; }
         .act-time { font-size: 10px; color: #bbb; }
 
+        /* ── QUICK ACTIONS ── */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .qa-btn { background: #f3f0ff; border: none; border-radius: 12px; padding: 14px 10px; cursor: pointer; text-align: center; transition: all 0.2s; font-family: "Poppins",sans-serif; text-decoration: none; display: block; }
+        .qa-btn:hover { background: #ede8ff; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(124,92,232,0.2); }
+        .qa-icon  { font-size: 20px; margin-bottom: 6px; }
+        .qa-label { font-size: 11px; font-weight: 600; color: #6a4fd8; }
+
+        /* ── CHART BARS ── */
+        .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; margin-top: 10px; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bar { width: 100%; border-radius: 6px 6px 0 0; background: rgba(124,92,232,0.2); }
+        .bar.active { background: linear-gradient(180deg,#7c5ce8,rgba(124,92,232,0.4)); }
+        .bar-label { font-size: 9px; color: #aaa; }
+
         /* ── ANIMATIONS ── */
-        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulse-dot { 0%,100%{ box-shadow:0 0 6px #22c55e; } 50%{ box-shadow:0 0 14px #22c55e; } }
         @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.88; } }
-
-        .stat-card:nth-child(1){animation-delay:0.05s;}
-        .stat-card:nth-child(2){animation-delay:0.10s;}
-        .stat-card:nth-child(3){animation-delay:0.15s;}
-        .stat-card:nth-child(4){animation-delay:0.20s;}
-        .stat-card:nth-child(5){animation-delay:0.25s;}
-        .stat-card:nth-child(6){animation-delay:0.30s;}
+        .stat-card:nth-child(1){animation-delay:0.05s;} .stat-card:nth-child(2){animation-delay:0.10s;}
+        .stat-card:nth-child(3){animation-delay:0.15s;} .stat-card:nth-child(4){animation-delay:0.20s;}
+        .stat-card:nth-child(5){animation-delay:0.25s;} .stat-card:nth-child(6){animation-delay:0.30s;}
 
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 4px; }
 
-        @media(max-width:1200px){ .stats-grid{grid-template-columns:repeat(3,1fr);} .mid-grid,.bottom-grid{grid-template-columns:1fr 1fr;} }
-        @media(max-width:700px) { .stats-grid{grid-template-columns:repeat(2,1fr);} .mid-grid,.bottom-grid{grid-template-columns:1fr;} .form-row{grid-template-columns:1fr;} }
+        @media(max-width:1200px){ .stats-grid{grid-template-columns:repeat(3,1fr);} .three-col{grid-template-columns:1fr 1fr;} .two-col{grid-template-columns:1fr;} }
+        @media(max-width:700px)  { .stats-grid{grid-template-columns:repeat(2,1fr);} .three-col,.two-col,.two-equal{grid-template-columns:1fr;} .form-row{grid-template-columns:1fr;} }
     </style>
 </head>
 <body>
+
+    <!-- ══════════════════════════════════════════ SIDEBAR ══════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-profile">
+            <img src="/static/images/logo.png" alt="Ever Well" style="width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.2);">
+            <div class="sidebar-profile-info">
+                <div class="sidebar-name">Ever Well</div>
+                <div class="sidebar-role">Hospital Management</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">General</div>
+            <a href="#" class="nav-item active" data-tooltip="Dashboard" onclick="showSection('dashboard',this);return false;">
+                <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+            </a>
+
+            <div class="sidebar-section-label">Manage</div>
+            <a href="#" class="nav-item" data-tooltip="Doctors" onclick="showSection('doctors',this);return false;">
+                <span class="nav-icon">👨‍⚕️</span><span class="nav-label">Doctors</span>
+                <span class="nav-badge">{{ doctors|length }}</span>
+            </a>
+            <a href="#" class="nav-item" data-tooltip="Staff" onclick="showSection('staff',this);return false;">
+                <span class="nav-icon">🪪</span><span class="nav-label">Staff</span>
+                <span class="nav-badge">{{ staff|length }}</span>
+            </a>
+            <a href="#" class="nav-item" data-tooltip="Appointments" onclick="showSection('appointments',this);return false;">
+                <span class="nav-icon">📅</span><span class="nav-label">Appointments</span>
+                {% if all_appointments|length > 0 %}<span class="nav-badge">{{ all_appointments|length }}</span>{% endif %}
+            </a>
+            <a href="#" class="nav-item" data-tooltip="Emergencies" onclick="showSection('emergency',this);return false;">
+                <span class="nav-icon">🚨</span><span class="nav-label">Emergencies</span>
+                {% if emergencies|length > 0 %}<span class="nav-badge">{{ emergencies|length }}</span>{% endif %}
+            </a>
+
+            <div class="sidebar-section-label">Finance &amp; More</div>
+            <a href="#" class="nav-item" data-tooltip="Billing" onclick="showSection('billing',this);return false;">
+                <span class="nav-icon">💳</span><span class="nav-label">Billing</span>
+                {% if overdue_bills|length > 0 %}<span class="nav-badge">{{ overdue_bills|length }}</span>{% endif %}
+            </a>
+            <a href="#" class="nav-item" data-tooltip="Departments" onclick="showSection('departments',this);return false;">
+                <span class="nav-icon">🏥</span><span class="nav-label">Departments</span>
+            </a>
+            <a href="#" class="nav-item" data-tooltip="Reviews" onclick="showSection('reviews',this);return false;">
+                <span class="nav-icon">⭐</span><span class="nav-label">Reviews</span>
+            </a>
+
+            <div class="sidebar-section-label">Account</div>
+            <a href="/logout" class="nav-item" data-tooltip="Logout" style="color:rgba(255,180,180,0.85);">
+                <span class="nav-icon">🚪</span><span class="nav-label">Logout</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                <span id="toggleIcon">◀</span>
+                <span class="toggle-label">Collapse</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ══════════════════════════════════════════ MAIN CONTENT ══════════════════════════════════════════ -->
+    <div class="main-content" id="mainContent">
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}{% for category, message in messages %}
@@ -194,436 +406,737 @@
     {% endfor %}{% endif %}
     {% endwith %}
 
-    <!-- HEADER -->
+    <!-- HEADER (always visible) -->
     <div class="header">
         <div class="header-left">
-            <h1>🏥 Welcome, Admin</h1>
-            <p>Hospital Management System — Full Control Panel</p>
+            <h1><img src="/static/images/logo.png" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:8px;">Welcome, Admin</h1>
+            <p id="pageSubtitle">Ever Well Hospital — Full Control Panel</p>
         </div>
         <div class="header-right">
             <a href="/logout" class="btn-logout">Logout</a>
-            <div class="icon-circle bell">🔔</div>
+
+            <!-- NOTIFICATION BELL -->
+            <div class="notif-wrapper" id="notifWrapper">
+                <div class="icon-circle bell" id="notifBell" onclick="toggleNotif(event)" title="Notifications">🔔</div>
+                {% set total_notifs = emergencies|length + overdue_bills|length %}
+                {% if total_notifs > 0 %}
+                <div class="notif-badge" id="notifBadge">{{ total_notifs }}</div>
+                {% endif %}
+
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header">
+                        <span class="notif-header-title">🔔 Notifications</span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+                            <button onclick="closeNotif()" style="width:26px;height:26px;border-radius:8px;background:#f3f0ff;border:1px solid #e0d8ff;color:#888;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-family:inherit;" onmouseover="this.style.background='#fff0f0';this.style.color='#ff4d4d';" onmouseout="this.style.background='#f3f0ff';this.style.color='#888';">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="notif-tabs">
+                        <div class="notif-tab active" onclick="switchTab('all',this)">All ({{ total_notifs }})</div>
+                        <div class="notif-tab" onclick="switchTab('emergency',this)">🚨 Emergency ({{ emergencies|length }})</div>
+                        <div class="notif-tab" onclick="switchTab('billing',this)">💳 Billing ({{ overdue_bills|length }})</div>
+                    </div>
+
+                    <!-- ALL tab -->
+                    <div class="notif-list" id="tab-all">
+                        {% for e in emergencies %}
+                        <div class="notif-item unread" onclick="showSection('appointments', document.querySelector('[data-tooltip=Appointments]'))">
+                            <div class="notif-icon-wrap" style="background:#fff0f0;">🚑</div>
+                            <div class="notif-body">
+                                <div class="notif-title">Emergency — {{ e.get('patient_name', e.get('patient_username','Unknown')) }}</div>
+                                <div class="notif-desc">{{ e.get('reason','') }}{% if e.get('location') %} · {{ e.get('location') }}{% endif %}</div>
+                                <div class="notif-time">
+                                    {% if e.status == 'resolved' %}✅ Resolved
+                                    {% elif e.status == 'dispatched' %}🚐 Dispatched
+                                    {% else %}⏳ Pending response{% endif %}
+                                    {% if e.get('created_at') %} · {{ e.get('created_at').strftime('%d %b, %I:%M %p') }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% for b in overdue_bills %}
+                        <div class="notif-item unread" onclick="showSection('billing', document.querySelector('[data-tooltip=Billing]'))">
+                            <div class="notif-icon-wrap" style="background:#fff8e1;">⚠️</div>
+                            <div class="notif-body">
+                                <div class="notif-title">Overdue Bill — {{ b.get('patient_name', b.get('patient_username','')) }}</div>
+                                <div class="notif-desc">Dr. {{ b.get('doctor','') }} · ₹{{ "%.2f"|format(b.get('total_amount',0)) }}</div>
+                                <div class="notif-time">⏰ Unpaid for 24h+</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% if total_notifs == 0 %}
+                        <div class="notif-empty">✅ All caught up!<br>No new notifications.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- EMERGENCY tab -->
+                    <div class="notif-list" id="tab-emergency" style="display:none;">
+                        {% for e in emergencies %}
+                        <div class="notif-item unread" onclick="showSection('appointments', document.querySelector('[data-tooltip=Appointments]'))">
+                            <div class="notif-icon-wrap" style="background:#fff0f0;">🚑</div>
+                            <div class="notif-body">
+                                <div class="notif-title">{{ e.get('patient_name', e.get('patient_username','Unknown')) }}</div>
+                                <div class="notif-desc">{{ e.get('reason','') }}{% if e.get('location') %} · {{ e.get('location') }}{% endif %}</div>
+                                <div class="notif-time">
+                                    {% if e.status == 'resolved' %}✅ Resolved{% elif e.status == 'dispatched' %}🚐 Dispatched{% else %}⏳ Pending{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="notif-empty">✅ No active emergencies.</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- BILLING tab -->
+                    <div class="notif-list" id="tab-billing" style="display:none;">
+                        {% for b in overdue_bills %}
+                        <div class="notif-item unread" onclick="showSection('billing', document.querySelector('[data-tooltip=Billing]'))">
+                            <div class="notif-icon-wrap" style="background:#fff8e1;">⚠️</div>
+                            <div class="notif-body">
+                                <div class="notif-title">{{ b.get('patient_name', b.get('patient_username','')) }}</div>
+                                <div class="notif-desc">Dr. {{ b.get('doctor','') }} · ₹{{ "%.2f"|format(b.get('total_amount',0)) }}</div>
+                                <div class="notif-time">⏰ Unpaid for 24h+</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="notif-empty">✅ No overdue bills.</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="notif-footer">
+                        <a href="#" onclick="showSection('appointments', document.querySelector('[data-tooltip=Appointments]'));closeNotif();">View all emergencies →</a>
+                    </div>
+                </div>
+            </div>
+
             <div class="icon-circle avatar">👤</div>
         </div>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">👨‍⚕️</div>
-            <div class="stat-value">{{ doctors|length }}</div>
-            <div class="stat-label">Total Doctors</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-value">{{ staff|length }}</div>
-            <div class="stat-label">Total Staff</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🛏️</div>
-            <div class="stat-value">{{ all_appointments|length }}</div>
-            <div class="stat-label">Patients Today</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">📅</div>
-            <div class="stat-value">{{ all_appointments|selectattr("status","in",["Booked","Rescheduled"])|list|length }}</div>
-            <div class="stat-label">Pending Appts</div>
-        </div>
-        <div class="stat-card emerg">
-            <div class="stat-icon">🚨</div>
-            <div class="stat-value">{{ emergencies|length }}</div>
-            <div class="stat-label">Emergencies</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🟢</div>
-            <div class="stat-value" style="color:#22c55e;">
-                {{ doctors|selectattr("status_override","ne","offline")|list|length if doctors else doctors|length }}
+    <!-- ══════════════════════════════════════════
+         SECTION: DASHBOARD
+    ══════════════════════════════════════════ -->
+    <div class="page-section active" id="sec-dashboard">
+
+        <!-- Stats row -->
+        <div class="stats-grid">
+            <div class="stat-card" onclick="showSection('doctors', document.querySelector('[data-tooltip=Doctors]'))">
+                <div class="stat-icon">👨‍⚕️</div>
+                <div class="stat-value">{{ doctors|length }}</div>
+                <div class="stat-label">Total Doctors</div>
             </div>
-            <div class="stat-label">Available</div>
-            <div class="status-pill"><div class="dot-green"></div> Live</div>
-        </div>
-    </div>
-
-    <!-- MID ROW -->
-    <div class="section-label">Manage Hospital</div>
-    <div class="mid-grid">
-
-        <!-- ADD DOCTOR -->
-        <div class="white-card">
-            <div class="card-title">👨‍⚕️ Register Doctor</div>
-            <form method="POST" action="/admin/add-doctor">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Full Name *</label>
-                        <input type="text" name="name" placeholder="Dr. Arjun Shah" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Department *</label>
-                        <input type="text" name="department" placeholder="e.g. Cardiology"
-                               list="deptList" required autocomplete="off">
-                        <datalist id="deptList">
-                            {% set seen_depts = [] %}
-                            {% for d in doctors %}
-                                {% if d.department not in seen_depts %}
-                                    <option value="{{ d.department }}">
-                                    {% set _ = seen_depts.append(d.department) %}
-                                {% endif %}
-                            {% endfor %}
-                            <option value="Cardiology"><option value="Neurology">
-                            <option value="Orthopedics"><option value="Pediatrics">
-                            <option value="General Medicine"><option value="Emergency">
-                            <option value="Dermatology"><option value="ENT">
-                            <option value="Oncology"><option value="Gynecology">
-                        </datalist>
-                    </div>
-                    <div class="form-group">
-                        <label>Username *</label>
-                        <input type="text" name="username" placeholder="dr.arjun" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-add purple">➕ Add Doctor</button>
-            </form>
-
-            <div class="section-mini-title">Doctors on duty ({{ doctors|length }})</div>
-            <div class="list-scroll">
-                {% for d in doctors %}
-                <div class="list-item">
-                    <div class="list-avatar" style="background:#ede8ff;color:#7c5ce8;">{{ d.name[0]|upper if d.name else 'D' }}</div>
-                    <div class="list-info">
-                        <div class="list-name">{{ d.name }}</div>
-                        <div class="list-sub">{{ d.department }} · @{{ d.username }}</div>
-                    </div>
-                    <div class="pill pill-purple">{{ d.department }}</div>
-                    <form method="POST" action="/admin/delete-doctor" style="margin:0;">
-                        <input type="hidden" name="doctor_id" value="{{ d._id }}">
-                        <button class="btn-del" type="submit" onclick="return confirm('Remove Dr. {{ d.name }}?')">✕</button>
-                    </form>
-                </div>
-                {% else %}
-                <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No doctors yet.</div>
-                {% endfor %}
+            <div class="stat-card" onclick="showSection('staff', document.querySelector('[data-tooltip=Staff]'))">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value">{{ staff|length }}</div>
+                <div class="stat-label">Total Staff</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🧑‍🤝‍🧑</div>
+                <div class="stat-value">{{ total_patients }}</div>
+                <div class="stat-label">Total Patients</div>
+            </div>
+            <div class="stat-card" onclick="showSection('appointments', document.querySelector('[data-tooltip=Appointments]'))">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value">{{ all_appointments|length }}</div>
+                <div class="stat-label">Appointments Today</div>
+            </div>
+            <div class="stat-card emerg" onclick="showSection('emergency', document.querySelector('[data-tooltip=Emergencies]'))">
+                <div class="stat-icon">🚨</div>
+                <div class="stat-value">{{ emergencies|length }}</div>
+                <div class="stat-label">Emergencies</div>
+            </div>
+            <div class="stat-card" onclick="showSection('billing', document.querySelector('[data-tooltip=Billing]'))">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value" style="color:#e07900;">{{ overdue_bills|length }}</div>
+                <div class="stat-label">Overdue Bills</div>
             </div>
         </div>
 
-        <!-- ADD STAFF -->
-        <div class="white-card">
-            <div class="card-title">🪪 Register Staff</div>
-            <form method="POST" action="/admin/add-staff">
-                <div class="form-row">
-                    <div class="form-group full">
-                        <label>Staff Name *</label>
-                        <input type="text" name="name" placeholder="Meena Patel" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Role</label>
-                        <input type="text" name="role" placeholder="Nurse / Receptionist" list="roleList">
-                        <datalist id="roleList">
-                            <option value="Nurse"><option value="Receptionist">
-                            <option value="Lab Technician"><option value="Pharmacist">
-                            <option value="Ward Boy"><option value="Radiologist">
-                        </datalist>
-                    </div>
-                    <div class="form-group">
-                        <label>Username *</label>
-                        <input type="text" name="username" placeholder="meena.p" required>
-                    </div>
-                    <div class="form-group full">
-                        <label>Password *</label>
-                        <input type="password" name="password" placeholder="••••••••" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-add green">➕ Add Staff</button>
-            </form>
-
-            <div class="section-mini-title">Staff members ({{ staff|length }})</div>
-            <div class="list-scroll">
-                {% for s in staff %}
-                <div class="list-item">
-                    <div class="list-avatar" style="background:#e8fff3;color:#16a34a;">{{ s.name[0]|upper if s.name else 'S' }}</div>
-                    <div class="list-info">
-                        <div class="list-name">{{ s.name }}</div>
-                        <div class="list-sub">@{{ s.username }}{% if s.role %} · {{ s.role }}{% endif %}</div>
-                    </div>
-                    <div class="pill pill-green">{{ s.role if s.role else 'Staff' }}</div>
-                    <form method="POST" action="/admin/delete-staff" style="margin:0;">
-                        <input type="hidden" name="staff_id" value="{{ s._id }}">
-                        <button class="btn-del" type="submit" onclick="return confirm('Remove {{ s.name }}?')">✕</button>
-                    </form>
-                </div>
-                {% else %}
-                <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No staff yet.</div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- EMERGENCIES + TODAY'S APPOINTMENTS -->
-        <div class="white-card">
-            <div class="card-title" style="color:#ff4d4d;">🚨 Emergency Patients</div>
-            <div class="list-scroll" style="max-height:160px;">
-                {% for e in emergencies %}
-                <div class="emergency-item">
-                    <div class="em-icon">❤️</div>
+        <!-- Two key panels -->
+        <div class="two-col">
+            <!-- Recent Activity -->
+            <div class="white-card">
+                <div class="card-title">🕐 Recent Activity</div>
+                {% for d in doctors[:3] %}
+                <div class="activity-item">
+                    <div class="act-dot" style="background:#7c5ce8;"></div>
                     <div>
-                        <div class="em-name">{{ e.username }}</div>
-                        <div class="em-issue">{{ e.get('doctor','') }}{% if e.get('time') %} · {{ e.time }}{% endif %}</div>
+                        <div class="act-text"><strong>{{ d.name }}</strong> registered in {{ d.department }}</div>
+                        <div class="act-time">Doctor account</div>
                     </div>
-                    <div class="em-time">⚡ NOW</div>
                 </div>
-                {% else %}
-                <div style="text-align:center;padding:16px;color:#aaa;font-size:12px;">✅ No active emergencies</div>
                 {% endfor %}
-            </div>
-
-            <div class="section-mini-title" style="margin-top:14px;">Today's Appointments ({{ all_appointments|length }})</div>
-            <div class="list-scroll">
-                {% for a in all_appointments %}
-                <div class="list-item">
-                    <div class="list-avatar" style="background:#f3f0ff;color:#7c5ce8;">{{ a.username[0]|upper if a.username else 'P' }}</div>
-                    <div class="list-info">
-                        <div class="list-name">{{ a.username }}</div>
-                        <div class="list-sub">{{ a.doctor }} · {{ a.time }}</div>
+                {% for s in staff[:2] %}
+                <div class="activity-item">
+                    <div class="act-dot" style="background:#22c55e;"></div>
+                    <div>
+                        <div class="act-text"><strong>{{ s.name }}</strong> added as {{ s.role if s.role else "Staff" }}</div>
+                        <div class="act-time">@{{ s.username }}</div>
                     </div>
-                    <div class="pill {% if a.status=='Completed' %}pill-green{% elif a.status in ['Cancelled','Emergency'] %}pill-red{% else %}pill-purple{% endif %}">{{ a.status }}</div>
                 </div>
-                {% else %}
-                <div style="text-align:center;padding:14px;color:#aaa;font-size:12px;">No appointments today</div>
                 {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <!-- BOTTOM ROW -->
-    <div class="section-label">Analytics & Actions</div>
-    <div class="bottom-grid">
-
-        <!-- CHART -->
-        <div class="white-card">
-            <div class="card-title">📊 Patient Admissions</div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:4px;">
-                <span>Weekly trend</span>
-                <span style="color:#22c55e;font-weight:600;" id="trendLabel">This week</span>
-            </div>
-            <div class="chart-bars" id="chartBars">
-                <!-- JS renders bars from live data -->
-                <div class="bar-wrap"><div class="bar" style="height:40px;"></div><div class="bar-label">Mon</div></div>
-                <div class="bar-wrap"><div class="bar" style="height:55px;"></div><div class="bar-label">Tue</div></div>
-                <div class="bar-wrap"><div class="bar" style="height:35px;"></div><div class="bar-label">Wed</div></div>
-                <div class="bar-wrap"><div class="bar" style="height:65px;"></div><div class="bar-label">Thu</div></div>
-                <div class="bar-wrap"><div class="bar active" style="height:{{ [all_appointments|length * 3, 80]|min + 10 }}px;"></div><div class="bar-label">Fri</div></div>
-                <div class="bar-wrap"><div class="bar" style="height:45px;"></div><div class="bar-label">Sat</div></div>
-                <div class="bar-wrap"><div class="bar" style="height:25px;"></div><div class="bar-label">Sun</div></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">
-                <div style="background:#f3f0ff;border-radius:10px;padding:10px;text-align:center;">
-                    <div style="font-size:20px;font-weight:800;color:#7c5ce8;">{{ all_appointments|length }}</div>
-                    <div style="font-size:10px;color:#aaa;">Today</div>
-                </div>
-                <div style="background:#e8fff3;border-radius:10px;padding:10px;text-align:center;">
-                    <div style="font-size:20px;font-weight:800;color:#16a34a;">{{ all_appointments|selectattr("status","equalto","Completed")|list|length }}</div>
-                    <div style="font-size:10px;color:#aaa;">Completed</div>
-                </div>
-                <div style="background:#fff0f0;border-radius:10px;padding:10px;text-align:center;">
-                    <div style="font-size:20px;font-weight:800;color:#ff4d4d;">{{ emergencies|length }}</div>
-                    <div style="font-size:10px;color:#aaa;">Emergency</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ACTIVITY FEED -->
-        <div class="white-card">
-            <div class="card-title">🕐 Recent Activity</div>
-            {% for d in doctors[:3] %}
-            <div class="activity-item">
-                <div class="act-dot" style="background:#7c5ce8;"></div>
-                <div>
-                    <div class="act-text"><strong>Dr. {{ d.name }}</strong> registered in {{ d.department }}</div>
-                    <div class="act-time">Doctor account</div>
-                </div>
-            </div>
-            {% endfor %}
-            {% for s in staff[:2] %}
-            <div class="activity-item">
-                <div class="act-dot" style="background:#22c55e;"></div>
-                <div>
-                    <div class="act-text"><strong>{{ s.name }}</strong> added as {{ s.role if s.role else 'Staff' }}</div>
-                    <div class="act-time">@{{ s.username }}</div>
-                </div>
-            </div>
-            {% endfor %}
-            {% for a in all_appointments[:3] %}
-            <div class="activity-item">
-                <div class="act-dot" style="background:#ff9500;"></div>
-                <div>
-                    <div class="act-text"><strong>{{ a.username }}</strong> → {{ a.doctor }}</div>
-                    <div class="act-time">{{ a.status }} · {{ a.time }}</div>
-                </div>
-            </div>
-            {% endfor %}
-            {% if not doctors and not staff and not all_appointments %}
-            <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No activity yet</div>
-            {% endif %}
-        </div>
-
-        <!-- QUICK ACTIONS -->
-        <div class="white-card">
-            <div class="card-title">⚡ Quick Actions</div>
-            <div class="qa-grid">
-                <a href="/admin" class="qa-btn"><div class="qa-icon">🔄</div><div class="qa-label">Refresh</div></a>
-                <button class="qa-btn" onclick="exportCSV()"><div class="qa-icon">📥</div><div class="qa-label">Export CSV</div></button>
-                <button class="qa-btn" onclick="window.print()"><div class="qa-icon">🖨️</div><div class="qa-label">Print</div></button>
-                <a href="/logout" class="qa-btn"><div class="qa-icon">🚪</div><div class="qa-label">Logout</div></a>
-            </div>
-
-            <div style="margin-top:18px;background:#f3f0ff;border-radius:12px;padding:14px;">
-                <div style="font-size:11px;font-weight:700;color:#7c5ce8;margin-bottom:10px;">📋 SYSTEM SUMMARY</div>
-                <div style="font-size:12px;color:#555;display:flex;flex-direction:column;gap:6px;">
-                    <div>👨‍⚕️ <strong>{{ doctors|length }}</strong> Doctors across
-                        {% set dept_count = [] %}
-                        {% for d in doctors %}{% if d.department not in dept_count %}{% set _ = dept_count.append(d.department) %}{% endif %}{% endfor %}
-                        <strong>{{ dept_count|length }}</strong> departments
+                {% for a in all_appointments[:3] %}
+                <div class="activity-item">
+                    <div class="act-dot" style="background:#ff9500;"></div>
+                    <div>
+                        <div class="act-text"><strong>{{ a.username }}</strong> → {{ a.doctor }}</div>
+                        <div class="act-time">{{ a.status }} · {{ a.time }}</div>
                     </div>
-                    <div>👥 <strong>{{ staff|length }}</strong> Staff members registered</div>
-                    <div>📅 <strong>{{ all_appointments|length }}</strong> appointments today</div>
-                    <div>🚨 <strong>{{ emergencies|length }}</strong> active emergencies</div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DEPARTMENTS OVERVIEW -->
-    <div class="section-label">Departments</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px;">
-        {% set dept_map = {} %}
-        {% for d in doctors %}
-            {% if d.department %}
-                {% if d.department in dept_map %}
-                    {% set _ = dept_map.update({d.department: dept_map[d.department] + 1}) %}
-                {% else %}
-                    {% set _ = dept_map.update({d.department: 1}) %}
+                {% endfor %}
+                {% if not doctors and not staff and not all_appointments %}
+                <div style="text-align:center;padding:24px;color:#aaa;font-size:12px;">No activity yet</div>
                 {% endif %}
-            {% endif %}
-        {% endfor %}
-        {% for dept, count in dept_map.items() %}
-        <div class="white-card" style="padding:18px;text-align:center;">
-            <div style="font-size:26px;margin-bottom:8px;">
-                {% set dl = dept|lower %}
-                {% if 'cardio' in dl %}❤️{% elif 'neuro' in dl %}🧠{% elif 'ortho' in dl %}🦴
-                {% elif 'pedia' in dl %}👶{% elif 'ent' in dl %}👂{% elif 'onco' in dl %}🎗️
-                {% elif 'gynec' in dl or 'gynaec' in dl %}🌸{% elif 'derma' in dl %}🧴
-                {% elif 'eye' in dl or 'ophth' in dl %}👁️{% elif 'emerg' in dl %}🚨
-                {% else %}🏥{% endif %}
             </div>
-            <div style="font-size:22px;font-weight:800;color:#7c5ce8;">{{ count }}</div>
-            <div style="font-size:11px;color:#888;font-weight:600;margin-top:2px;">{{ dept }}</div>
-            <div style="font-size:10px;color:#aaa;">doctor{{ 's' if count != 1 }}</div>
-        </div>
-        {% else %}
-        <div class="white-card" style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa;font-size:13px;">
-            No departments yet — add doctors to see departments here.
-        </div>
-        {% endfor %}
-    </div>
 
-    <!-- FULL DOCTOR TABLE -->
-    <div class="section-label">Doctor Directory</div>
-    <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
-        <div class="card-title">👨‍⚕️ All Registered Doctors ({{ doctors|length }})</div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="th-purple">Name</th>
-                    <th class="th-purple">Department</th>
-                    <th class="th-purple">Username</th>
-                    <th class="th-purple">Status</th>
-                    <th class="th-purple">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for d in doctors %}
-                <tr>
-                    <td>
-                        <div style="display:flex;align-items:center;gap:8px;">
+            <!-- Quick Actions + Summary -->
+            <div class="white-card">
+                <div class="card-title">⚡ Quick Actions</div>
+                <div class="qa-grid">
+                    <a href="/admin" class="qa-btn"><div class="qa-icon">🔄</div><div class="qa-label">Refresh</div></a>
+                    <button class="qa-btn" onclick="exportCSV()"><div class="qa-icon">📥</div><div class="qa-label">Export CSV</div></button>
+                    <button class="qa-btn" onclick="window.print()"><div class="qa-icon">🖨️</div><div class="qa-label">Print</div></button>
+                    <a href="/logout" class="qa-btn"><div class="qa-icon">🚪</div><div class="qa-label">Logout</div></a>
+                </div>
+                <div style="margin-top:18px;background:#f3f0ff;border-radius:12px;padding:14px;">
+                    <div style="font-size:11px;font-weight:700;color:#7c5ce8;margin-bottom:10px;">📋 SYSTEM SUMMARY</div>
+                    <div style="font-size:12px;color:#555;display:flex;flex-direction:column;gap:7px;">
+                        <div>👨‍⚕️ <strong>{{ doctors|length }}</strong> Doctors registered</div>
+                        <div>👥 <strong>{{ staff|length }}</strong> Staff members</div>
+                        <div>📅 <strong>{{ all_appointments|length }}</strong> appointments today</div>
+                        <div>🚨 <strong>{{ emergencies|length }}</strong> active emergencies</div>
+                        <div>⚠️ <strong>{{ overdue_bills|length }}</strong> overdue bills</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end #sec-dashboard -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: DOCTORS
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-doctors">
+        <div class="section-label">Manage Doctors</div>
+        <div class="two-col">
+            <!-- Register form + list -->
+            <div class="white-card">
+                <div class="card-title">👨‍⚕️ Register Doctor</div>
+                <form method="POST" action="/admin/add-doctor">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" placeholder="Dr. Arjun Shah" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Department *</label>
+                            <input type="text" name="department" placeholder="e.g. Cardiology" list="deptList" required autocomplete="off">
+                            <datalist id="deptList">
+                                {% set seen_depts = [] %}
+                                {% for d in doctors %}{% if d.department not in seen_depts %}<option value="{{ d.department }}">{% set _ = seen_depts.append(d.department) %}{% endif %}{% endfor %}
+                                <option value="Cardiology"><option value="Neurology"><option value="Orthopedics">
+                                <option value="Pediatrics"><option value="General Medicine"><option value="Emergency">
+                                <option value="Dermatology"><option value="ENT"><option value="Oncology"><option value="Gynecology">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Username *</label>
+                            <input type="text" name="username" placeholder="dr.arjun" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password *</label>
+                            <input type="password" name="password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add purple">➕ Add Doctor</button>
+                </form>
+                <div class="section-mini-title">Doctors on duty ({{ doctors|length }})</div>
+                <div class="list-scroll">
+                    {% for d in doctors %}
+                    <div class="list-item">
+                        <div class="list-avatar" style="background:#ede8ff;color:#7c5ce8;">{{ d.name[0]|upper if d.name else "D" }}</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ d.name }}</div>
+                            <div class="list-sub">{{ d.department }} · @{{ d.username }}</div>
+                        </div>
+                        <div class="pill pill-purple">{{ d.department }}</div>
+                        <form method="POST" action="/admin/delete-doctor" style="margin:0;">
+                            <input type="hidden" name="doctor_id" value="{{ d._id }}">
+                            <button class="btn-del" type="submit" onclick="return confirm('Remove Dr. {{ d.name }}?')">✕</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No doctors yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Doctor Activity Status -->
+            <div class="white-card">
+                <div class="card-title">🟢 Live Doctor Status</div>
+                <div class="list-scroll" style="max-height:400px;">
+                    {% for d in doctors %}
+                    <div class="list-item">
+                        <div class="list-avatar" style="background:#ede8ff;color:#7c5ce8;">{{ d.name[0]|upper }}</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ d.name }}</div>
+                            <div class="list-sub">{{ d.department }}</div>
+                        </div>
+                        {% if d.status == "available" %}<span class="pill pill-green">🟢 Available</span>
+                        {% elif d.status == "on_break" %}<span class="pill pill-orange">⏸️ Break</span>
+                        {% elif d.status == "on_leave" %}<span class="pill pill-blue">🏖️ Leave</span>
+                        {% else %}<span class="pill pill-red">⭕ Offline</span>{% endif %}
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No doctors yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Full table -->
+        <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+            <div class="card-title">📋 All Registered Doctors ({{ doctors|length }})</div>
+            <table class="data-table">
+                <thead><tr>
+                    <th class="th-purple">Name</th><th class="th-purple">Department</th>
+                    <th class="th-purple">Username</th><th class="th-purple">Status</th><th class="th-purple">Action</th>
+                </tr></thead>
+                <tbody>
+                    {% for d in doctors %}
+                    <tr>
+                        <td><div style="display:flex;align-items:center;gap:8px;">
                             <div style="width:30px;height:30px;border-radius:8px;background:#ede8ff;color:#7c5ce8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ d.name[0]|upper }}</div>
                             <span style="font-weight:600;color:#1a1a2e;">{{ d.name }}</span>
-                        </div>
-                    </td>
-                    <td><span class="pill pill-purple">{{ d.department }}</span></td>
-                    <td style="color:#888;">@{{ d.username }}</td>
-                    <td>
-                        {% if d.get('status_override','available') == 'offline' %}
-                            <span class="pill pill-red">Offline</span>
-                        {% else %}
-                            <span class="pill pill-green">Available</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form method="POST" action="/admin/delete-doctor" style="margin:0;display:inline;">
+                        </div></td>
+                        <td><span class="pill pill-purple">{{ d.department }}</span></td>
+                        <td style="color:#888;">@{{ d.username }}</td>
+                        <td>{% if d.get("status_override","available") == "offline" %}<span class="pill pill-red">Offline</span>{% else %}<span class="pill pill-green">Available</span>{% endif %}</td>
+                        <td><form method="POST" action="/admin/delete-doctor" style="margin:0;display:inline;">
                             <input type="hidden" name="doctor_id" value="{{ d._id }}">
-                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;"
-                                    onclick="return confirm('Remove Dr. {{ d.name }}?')">🗑️ Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa;">No doctors registered yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Poppins,sans-serif;" onclick="return confirm('Remove Dr. {{ d.name }}?')">🗑️ Remove</button>
+                        </form></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa;">No doctors registered yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div><!-- end #sec-doctors -->
 
-    <!-- FULL STAFF TABLE -->
-    <div class="section-label">Staff Directory</div>
-    <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
-        <div class="card-title">🪪 All Registered Staff ({{ staff|length }})</div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="th-green">Name</th>
-                    <th class="th-green">Username</th>
-                    <th class="th-green">Role</th>
-                    <th class="th-green">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in staff %}
-                <tr>
-                    <td>
-                        <div style="display:flex;align-items:center;gap:8px;">
+    <!-- ══════════════════════════════════════════
+         SECTION: STAFF
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-staff">
+        <div class="section-label">Manage Staff</div>
+        <div class="two-col">
+            <div class="white-card">
+                <div class="card-title">🪪 Register Staff</div>
+                <form method="POST" action="/admin/add-staff">
+                    <div class="form-row">
+                        <div class="form-group full">
+                            <label>Staff Name *</label>
+                            <input type="text" name="name" placeholder="Meena Patel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <input type="text" name="role" placeholder="Nurse / Receptionist" list="roleList">
+                            <datalist id="roleList">
+                                <option value="Nurse"><option value="Receptionist"><option value="Lab Technician">
+                                <option value="Pharmacist"><option value="Ward Boy"><option value="Radiologist">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Username *</label>
+                            <input type="text" name="username" placeholder="meena.p" required>
+                        </div>
+                        <div class="form-group full">
+                            <label>Password *</label>
+                            <input type="password" name="password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add green">➕ Add Staff</button>
+                </form>
+                <div class="section-mini-title">Staff members ({{ staff|length }})</div>
+                <div class="list-scroll">
+                    {% for s in staff %}
+                    <div class="list-item">
+                        <div class="list-avatar" style="background:#e8fff3;color:#16a34a;">{{ s.name[0]|upper if s.name else "S" }}</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ s.name }}</div>
+                            <div class="list-sub">@{{ s.username }}{% if s.role %} · {{ s.role }}{% endif %}</div>
+                        </div>
+                        <div class="pill pill-green">{{ s.role if s.role else "Staff" }}</div>
+                        <form method="POST" action="/admin/delete-staff" style="margin:0;">
+                            <input type="hidden" name="staff_id" value="{{ s._id }}">
+                            <button class="btn-del" type="submit" onclick="return confirm('Remove {{ s.name }}?')">✕</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No staff yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Staff summary card -->
+            <div class="white-card">
+                <div class="card-title">📊 Staff by Role</div>
+                {% set role_map = {} %}
+                {% for s in staff %}{% if s.role %}{% if s.role in role_map %}{% set _ = role_map.update({s.role: role_map[s.role]+1}) %}{% else %}{% set _ = role_map.update({s.role: 1}) %}{% endif %}{% endif %}{% endfor %}
+                {% for role, cnt in role_map.items() %}
+                <div class="list-item">
+                    <div class="list-avatar" style="background:#e8fff3;color:#16a34a;">{{ cnt }}</div>
+                    <div class="list-info"><div class="list-name">{{ role }}</div></div>
+                    <span class="pill pill-green">{{ cnt }} member{{ "s" if cnt != 1 }}</span>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No staff roles yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+            <div class="card-title">📋 All Registered Staff ({{ staff|length }})</div>
+            <table class="data-table">
+                <thead><tr>
+                    <th class="th-green">Name</th><th class="th-green">Username</th>
+                    <th class="th-green">Role</th><th class="th-green">Action</th>
+                </tr></thead>
+                <tbody>
+                    {% for s in staff %}
+                    <tr>
+                        <td><div style="display:flex;align-items:center;gap:8px;">
                             <div style="width:30px;height:30px;border-radius:8px;background:#e8fff3;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ s.name[0]|upper }}</div>
                             <span style="font-weight:600;color:#1a1a2e;">{{ s.name }}</span>
-                        </div>
-                    </td>
-                    <td style="color:#888;">@{{ s.username }}</td>
-                    <td><span class="pill pill-green">{{ s.role if s.role else 'Staff' }}</span></td>
-                    <td>
-                        <form method="POST" action="/admin/delete-staff" style="margin:0;display:inline;">
+                        </div></td>
+                        <td style="color:#888;">@{{ s.username }}</td>
+                        <td><span class="pill pill-green">{{ s.role if s.role else "Staff" }}</span></td>
+                        <td><form method="POST" action="/admin/delete-staff" style="margin:0;display:inline;">
                             <input type="hidden" name="staff_id" value="{{ s._id }}">
-                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;"
-                                    onclick="return confirm('Remove {{ s.name }}?')">🗑️ Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" style="padding:30px;text-align:center;color:#aaa;">No staff registered yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                            <button type="submit" style="background:#fff0f0;border:1px solid #ffcdd2;color:#ff4d4d;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Poppins,sans-serif;" onclick="return confirm('Remove {{ s.name }}?')">🗑️ Remove</button>
+                        </form></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="padding:30px;text-align:center;color:#aaa;">No staff registered yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div><!-- end #sec-staff -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: APPOINTMENTS
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-appointments">
+        <div class="section-label">Appointments &amp; Emergencies</div>
+        <div class="two-col">
+            <div class="white-card">
+                <div class="card-title">📅 Today's Appointments ({{ all_appointments|length }})</div>
+                <div class="list-scroll" style="max-height:400px;">
+                    {% for a in all_appointments %}
+                    <div class="list-item">
+                        <div class="list-avatar" style="background:#f3f0ff;color:#7c5ce8;">{{ a.username[0]|upper if a.username else "P" }}</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ a.username }}</div>
+                            <div class="list-sub">{{ a.doctor }} · {{ a.time }}</div>
+                        </div>
+                        <div class="pill {% if a.status=="Completed" %}pill-green{% elif a.status in ["Cancelled","Emergency"] %}pill-red{% else %}pill-purple{% endif %}">{{ a.status }}</div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:24px;color:#aaa;font-size:12px;">No appointments today</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="white-card">
+                <div class="card-title" style="color:#ff4d4d;">🚑 Emergency Requests</div>
+                <div class="list-scroll" style="max-height:400px;">
+                    {% for e in emergencies %}
+                    <div class="emergency-item" style="{% if e.status == 'resolved' %}opacity:0.6;border-color:#c8e6c9;background:#f1f8e9;animation:none;{% endif %}">
+                        <div class="em-icon">{% if e.status == 'resolved' %}✅{% else %}🚨{% endif %}</div>
+                        <div style="flex:1;">
+                            <div class="em-name" style="{% if e.status == 'resolved' %}color:#2e7d32;{% endif %}">{{ e.get("patient_name", e.get("patient_username","Unknown")) }}</div>
+                            <div class="em-issue">{{ e.get("reason","") }} · {{ e.get("location","") }}</div>
+                            <div style="font-size:10px;color:#aaa;margin-top:2px;">{{ e.get("created_at","").strftime("%d %b %Y %I:%M %p") if e.get("created_at") else "" }}</div>
+                        </div>
+                        <div>{% if e.status == "resolved" %}<span class="pill pill-green">Resolved</span>
+                        {% elif e.status == "dispatched" %}<span class="pill pill-orange">Dispatched</span>
+                        {% else %}<span class="pill pill-red">Pending</span>{% endif %}</div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:24px;color:#aaa;font-size:12px;">✅ No active emergencies</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div><!-- end #sec-appointments -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: EMERGENCY (Doctor Status)
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-emergency">
+        <div class="section-label">Doctor Activity Status</div>
+        <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+            <div class="card-title">👨‍⚕️ Live Doctor Status</div>
+            <table class="data-table">
+                <thead><tr>
+                    <th class="th-purple">Doctor</th><th class="th-purple">Department</th>
+                    <th class="th-purple">Status</th><th class="th-purple">Message</th>
+                </tr></thead>
+                <tbody>
+                    {% for d in doctors %}
+                    <tr>
+                        <td><div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:30px;height:30px;border-radius:8px;background:#ede8ff;color:#7c5ce8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">{{ d.name[0]|upper }}</div>
+                            <span style="font-weight:600;color:#1a1a2e;">{{ d.name }}</span>
+                        </div></td>
+                        <td><span class="pill pill-purple">{{ d.department }}</span></td>
+                        <td>{% if d.status == "available" %}<span class="pill pill-green">🟢 Available</span>
+                        {% elif d.status == "on_break" %}<span class="pill pill-orange">⏸️ On Break</span>
+                        {% elif d.status == "on_leave" %}<span class="pill pill-blue">🏖️ On Leave</span>
+                        {% else %}<span class="pill pill-red">⭕ Offline</span>{% endif %}</td>
+                        <td style="font-size:12px;color:#888;">{{ d.status_msg if d.status_msg else "—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div><!-- end #sec-emergency -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: BILLING
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-billing">
+        <div class="section-label">Billing Overview</div>
+        <div class="two-equal">
+            <div class="white-card" style="overflow-x:auto;">
+                <div class="card-title" style="color:#16a34a;">✅ Verified Bills ({{ verified_bills|length }})</div>
+                <div class="list-scroll" style="max-height:400px;">
+                    {% for b in verified_bills %}
+                    <div class="list-item">
+                        <div class="list-avatar" style="background:#e8fff3;color:#16a34a;">₹</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ b.get("patient_name", b.get("patient_username","")) }}</div>
+                            <div class="list-sub">Dr. {{ b.get("doctor","") }} · ₹{{ "%.2f"|format(b.get("total_amount",0)) }}</div>
+                        </div>
+                        <span class="pill pill-green">Paid</span>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No verified bills yet</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="white-card" style="overflow-x:auto;">
+                <div class="card-title" style="color:#e07900;">⚠️ Overdue Bills 24h+ ({{ overdue_bills|length }})</div>
+                <div class="list-scroll" style="max-height:400px;">
+                    {% for b in overdue_bills %}
+                    <div class="list-item" style="background:#fff8e1;border:1px solid #ffe082;">
+                        <div class="list-avatar" style="background:#fff3cd;color:#e07900;">⚠️</div>
+                        <div class="list-info">
+                            <div class="list-name">{{ b.get("patient_name", b.get("patient_username","")) }}</div>
+                            <div class="list-sub">Dr. {{ b.get("doctor","") }} · ₹{{ "%.2f"|format(b.get("total_amount",0)) }}</div>
+                        </div>
+                        <span class="pill pill-orange">{{ b.get("status","sent")|title }}</span>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:20px;color:#aaa;font-size:12px;">No overdue bills</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div><!-- end #sec-billing -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: DEPARTMENTS
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-departments">
+        <div class="section-label">Departments</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px;">
+            {% set dept_map = {} %}
+            {% for d in doctors %}{% if d.department %}{% if d.department in dept_map %}{% set _ = dept_map.update({d.department: dept_map[d.department]+1}) %}{% else %}{% set _ = dept_map.update({d.department: 1}) %}{% endif %}{% endif %}{% endfor %}
+            {% for dept, count in dept_map.items() %}
+            <div class="white-card" style="padding:18px;text-align:center;">
+                <div style="font-size:26px;margin-bottom:8px;">
+                    {% set dl = dept|lower %}
+                    {% if "cardio" in dl %}❤️{% elif "neuro" in dl %}🧠{% elif "ortho" in dl %}🦴
+                    {% elif "pedia" in dl %}👶{% elif "ent" in dl %}👂{% elif "onco" in dl %}🎗️
+                    {% elif "gynec" in dl or "gynaec" in dl %}🌸{% elif "derma" in dl %}🧴
+                    {% elif "eye" in dl or "ophth" in dl %}👁️{% elif "emerg" in dl %}🚨
+                    {% else %}🏥{% endif %}
+                </div>
+                <div style="font-size:22px;font-weight:800;color:#7c5ce8;">{{ count }}</div>
+                <div style="font-size:11px;color:#888;font-weight:600;margin-top:2px;">{{ dept }}</div>
+                <div style="font-size:10px;color:#aaa;">doctor{{ "s" if count != 1 }}</div>
+            </div>
+            {% else %}
+            <div class="white-card" style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa;font-size:13px;">
+                No departments yet — add doctors to see departments here.
+            </div>
+            {% endfor %}
+        </div>
+    </div><!-- end #sec-departments -->
+
+    <!-- ══════════════════════════════════════════
+         SECTION: REVIEWS
+    ══════════════════════════════════════════ -->
+    <div class="page-section" id="sec-reviews">
+        <div class="section-label">Patient Reviews</div>
+        <div class="white-card" style="margin-bottom:22px;overflow-x:auto;">
+            <div class="card-title">⭐ Reviews Given by Patients ({{ all_ratings|length }})</div>
+            <table class="data-table">
+                <thead><tr>
+                    <th class="th-purple">Patient</th><th class="th-purple">Doctor</th>
+                    <th class="th-purple">Rating</th><th class="th-purple">Review</th><th class="th-purple">Date</th>
+                </tr></thead>
+                <tbody>
+                    {% for r in all_ratings %}
+                    <tr>
+                        <td style="font-weight:600;color:#1a1a2e;">{{ r.get("patient_username","") }}</td>
+                        <td><span class="pill pill-purple">{{ r.get("doctor","") }}</span></td>
+                        <td>
+                            <span style="color:#f59e0b;font-weight:800;font-size:14px;">{% for i in range(r.get("rating",0)|int) %}⭐{% endfor %}</span>
+                            <span style="font-size:11px;color:#888;margin-left:4px;">{{ r.get("rating",0) }}/5</span>
+                        </td>
+                        <td style="font-size:12px;color:#555;max-width:300px;">{{ r.get("review","—") }}</td>
+                        <td style="font-size:11px;color:#aaa;">{{ r.get("submitted_at","").strftime("%d %b %Y") if r.get("submitted_at") else r.get("date","") }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa;">No reviews yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div><!-- end #sec-reviews -->
 
     <script>
-    function exportCSV(){
-        const rows=[['Name','Department','Username','Status']];
-        {% for d in doctors %}
-        rows.push(['{{ d.name|replace("'","") }}','{{ d.department|replace("'","") }}','{{ d.username }}','{{ d.get("status_override","available") }}']);
-        {% endfor %}
-        const csv=rows.map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
-        const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-        a.download='doctors_list.csv'; a.click();
+    const sectionMap = {
+        dashboard:    "sec-dashboard",
+        doctors:      "sec-doctors",
+        staff:        "sec-staff",
+        appointments: "sec-appointments",
+        emergency:    "sec-emergency",
+        billing:      "sec-billing",
+        departments:  "sec-departments",
+        reviews:      "sec-reviews",
+    };
+    const subtitles = {
+        dashboard:    "Hospital Management System — Full Control Panel",
+        doctors:      "Register & manage doctors",
+        staff:        "Register & manage staff",
+        appointments: "Today's appointments & emergencies",
+        emergency:    "Live doctor activity status",
+        billing:      "Verified & overdue bills",
+        departments:  "Department overview",
+        reviews:      "Patient reviews & ratings",
+    };
+
+    function showSection(key, navEl) {
+        document.querySelectorAll(".page-section").forEach(s => s.classList.remove("active"));
+        const target = document.getElementById(sectionMap[key]);
+        if (target) target.classList.add("active");
+        document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+        if (navEl) navEl.classList.add("active");
+        const sub = document.getElementById("pageSubtitle");
+        if (sub) sub.textContent = subtitles[key] || "";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const main = document.getElementById("mainContent");
+        const icon = document.getElementById("toggleIcon");
+        sidebar.classList.toggle("collapsed");
+        main.classList.toggle("expanded");
+        icon.textContent = sidebar.classList.contains("collapsed") ? "▶" : "◀";
+        localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
+    }
+    if (localStorage.getItem("sidebarCollapsed") === "true") {
+        document.getElementById("sidebar").classList.add("collapsed");
+        document.getElementById("mainContent").classList.add("expanded");
+        document.getElementById("toggleIcon").textContent = "▶";
+    }
+
+   function exportCSV() {
+    const rows = [["Name", "Department", "Username", "Status"]];
+
+    {% for d in doctors %}
+    rows.push([
+        "{{ d.name|replace(\"'\", \"\") }}",
+        "{{ d.department|replace(\"'\", \"\") }}",
+        "{{ d.username }}",
+        "{{ d.get('status_override', 'available') }}"
+    ]);
+    {% endfor %}
+
+    const csv = rows
+        .map(r => r.map(c => '"' + c + '"').join(","))
+        .join("\n");
+
+    const a = document.createElement("a");
+    a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    a.download = "doctors_list.csv";
+    a.click();
+}
+
+    // ── NOTIFICATIONS ──
+    // Teleport dropdown to body so it's never clipped by parent stacking contexts
+    (function() {
+        const dropdown = document.getElementById("notifDropdown");
+        if (dropdown) document.body.appendChild(dropdown);
+    })();
+
+    function toggleNotif(e) {
+        e.stopPropagation();
+        const dropdown = document.getElementById("notifDropdown");
+        const backdrop = document.getElementById("notifBackdrop");
+        const bell = document.getElementById("notifBell");
+        const rect = bell.getBoundingClientRect();
+        dropdown.style.top   = (rect.bottom + 8) + "px";
+        dropdown.style.right = (window.innerWidth - rect.right) + "px";
+        dropdown.style.left  = "auto";
+        const isOpen = dropdown.classList.toggle("open");
+        backdrop.classList.toggle("open", isOpen);
+    }
+    function closeNotif() {
+        document.getElementById("notifDropdown").classList.remove("open");
+        document.getElementById("notifBackdrop").classList.remove("open");
+    }
+    document.getElementById("notifBackdrop").addEventListener("click", closeNotif);
+
+    // Also close when clicking anywhere outside the dropdown
+    document.addEventListener("click", function(e) {
+        const dropdown = document.getElementById("notifDropdown");
+        const bell = document.getElementById("notifBell");
+        if (dropdown && dropdown.classList.contains("open")) {
+            if (!dropdown.contains(e.target) && e.target !== bell) {
+                closeNotif();
+            }
+        }
+    });
+    function switchTab(tab, el) {
+        ["all","emergency","billing"].forEach(t => {
+            const el = document.getElementById("tab-"+t);
+            if (el) el.style.display = "none";
+        });
+        const target = document.getElementById("tab-"+tab);
+        if (target) target.style.display = "block";
+        document.querySelectorAll(".notif-tab").forEach(t => t.classList.remove("active"));
+        el.classList.add("active");
+    }
+    function markAllRead() {
+        document.querySelectorAll(".notif-item.unread").forEach(i => i.classList.remove("unread"));
+        const badge = document.getElementById("notifBadge");
+        if (badge) badge.style.display = "none";
     }
     </script>
+
+    </div><!-- end .main-content -->
+
+    <!-- Notification backdrop -->
+    <div class="notif-backdrop" id="notifBackdrop"></div>
+<script src="/static/pwa.js"></script>
 </body>
 </html>

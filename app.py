@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, f
 from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 import io
+import os
 
 # ── ReportLab for on-the-fly PDF generation ──────────────────────────────────
 from reportlab.lib.pagesizes import letter
@@ -22,9 +23,42 @@ from db import (
     prescriptions_col,
     ratings_col
 )
+from reminders import start_reminder_scheduler
 
 app = Flask(__name__)
 app.secret_key = "secret123"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Session config — 30 minute inactivity timeout
+# ─────────────────────────────────────────────────────────────────────────────
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
+
+SESSION_TIMEOUT = timedelta(minutes=30)
+
+@app.before_request
+def check_session_timeout():
+    # Skip static files, PWA assets, and the login/register routes
+    open_routes = {"login", "register", "static", "service_worker", "manifest"}
+    if request.endpoint in open_routes:
+        return
+
+    # If not logged in, redirect to login
+    if "username" not in session:
+        flash("Please log in to continue.", "error")
+        return redirect(url_for("login"))
+
+    # Check inactivity timeout
+    last_active = session.get("last_active")
+    if last_active:
+        last_active_dt = datetime.fromisoformat(last_active)
+        if datetime.utcnow() - last_active_dt > SESSION_TIMEOUT:
+            session.clear()
+            flash("⏰ Your session expired due to inactivity. Please log in again.", "warning")
+            return redirect(url_for("login"))
+
+    # Update last active timestamp on every request
+    session["last_active"] = datetime.utcnow().isoformat()
+    session.permanent = True
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper: get doctor leave/status doc
@@ -101,6 +135,20 @@ def auto_cleanup_appointments(username):
 def home():
     return redirect("/login")
 
+# ================= SERVICE WORKER =================
+@app.route("/sw.js")
+def service_worker():
+    from flask import send_from_directory
+    response = send_from_directory("static", "sw.js")
+    response.headers["Content-Type"] = "application/javascript"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+@app.route("/manifest.json")
+def manifest():
+    from flask import send_from_directory
+    return send_from_directory("static", "manifest.json")
+
 
 # ================= LOGIN =================
 @app.route("/login", methods=["GET", "POST"])
@@ -128,6 +176,8 @@ def login():
 
         session["username"] = username
         session["role"]     = role
+        session["last_active"] = datetime.utcnow().isoformat()
+        session.permanent  = True
 
         if role == "patient": return redirect(url_for("patient_dashboard", username=username))
         if role == "doctor":  return redirect(url_for("doctor_dashboard",  username=username))
@@ -166,20 +216,37 @@ def update_patient_profile():
     email    = request.form.get("email",    "").strip()
     age      = request.form.get("age",      "").strip()
     gender   = request.form.get("gender",   "").strip()
-    address  = request.form.get("address",  "").strip()
-    blood    = request.form.get("blood",    "").strip()
+    address   = request.form.get("address",   "").strip()
+    blood     = request.form.get("blood",     "").strip()
+    height    = request.form.get("height",    "").strip()
+    weight    = request.form.get("weight",    "").strip()
+    allergies = request.form.get("allergies", "").strip()
 
     if not username:
         flash("❌ Invalid request.", "error")
         return redirect("/login")
 
+    # Validate mobile number
+    import re
+    if mobile and not re.match(r'^[6-9]\d{9}$', mobile):
+        flash("❌ Invalid mobile number. Must be 10 digits starting with 6, 7, 8, or 9.", "error")
+        return redirect(url_for("patient_dashboard", username=username))
+
+    # Validate email format
+    if email and not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$', email):
+        flash("❌ Invalid email address. Please enter a valid email like name@gmail.com", "error")
+        return redirect(url_for("patient_dashboard", username=username))
+
     update_data = {}
-    if mobile:  update_data["mobile"]  = mobile
-    if email:   update_data["email"]   = email
-    if age:     update_data["age"]     = age
-    if gender:  update_data["gender"]  = gender
-    if address: update_data["address"] = address
-    if blood:   update_data["blood"]   = blood
+    if mobile:     update_data["mobile"]    = mobile
+    if email:      update_data["email"]     = email
+    if age:        update_data["age"]       = age
+    if gender:     update_data["gender"]    = gender
+    if address:    update_data["address"]   = address
+    if blood:      update_data["blood"]     = blood
+    if height:     update_data["height"]    = height
+    if weight:     update_data["weight"]    = weight
+    if allergies:  update_data["allergies"] = allergies
 
     if update_data:
         patients_col.update_one(
@@ -439,7 +506,7 @@ def book_appointment():
         "doctor":     doctor,
         "date":       date,
         "time":       time,
-        "hospital":   "City Heart Hospital",
+        "hospital":   "Ever Well Hospital",
         "token":      token,
         "avg_wait":   avg_wait,
         "status":     "Booked",
@@ -872,7 +939,7 @@ def download_prescription(prescription_id):
         [Paragraph("Medical Prescription", ps("HT",
             fontSize=22, textColor=colors.white,
             alignment=TA_CENTER, fontName="Helvetica-Bold"))],
-        [Paragraph("City Heart Hospital  -  Official Prescription Document", ps("HS",
+        [Paragraph("Ever Well Hospital  -  Official Prescription Document", ps("HS",
             fontSize=11, textColor=colors.HexColor("#e8eaf6"),
             alignment=TA_CENTER, fontName="Helvetica"))]
     ]
@@ -955,7 +1022,7 @@ def download_prescription(prescription_id):
         story += [notes_box, Spacer(1, 18)]
 
     footer = Table([[Paragraph(
-        f"Issued by Dr. {presc.get('doctor','')}  |  {presc.get('date','')}  |  City Heart Hospital",
+        f"Issued by Dr. {presc.get('doctor','')}  |  {presc.get('date','')}  |  Ever Well Hospital",
         ps("FT", fontSize=9, textColor=colors.white,
             alignment=TA_CENTER, fontName="Helvetica")
     )]], colWidths=[7*inch])
@@ -1276,7 +1343,7 @@ def staff_book_appointment():
         "doctor":          doctor,
         "date":            date,
         "time":            time,
-        "hospital":        "City Heart Hospital",
+        "hospital":        "Ever Well Hospital",
         "token":           token,
         "avg_wait":        avg_wait,
         "status":          "Booked",
@@ -1470,12 +1537,57 @@ def staff_verify_payment(bill_id):
 # ================= ADMIN DASHBOARD =================
 @app.route("/admin")
 def admin_dashboard():
-    doctors     = list(doctors_col.find())
-    staff       = list(staff_col.find())
-    emergencies = list(appointments_col.find({"status": "Emergency"}))
+    if session.get("role") != "admin":
+        return redirect("/login")
 
-    today_date = datetime.now().strftime("%Y-%m-%d")
+    doctors = list(doctors_col.find())
+    staff   = list(staff_col.find())
+
+    # Doctor activity status
+    for d in doctors:
+        st = get_doctor_status(d["name"])
+        d["status"]     = st["status"]
+        d["status_msg"] = st["message"]
+        d["_id"]        = str(d["_id"])
+
+    for s in staff:
+        s["_id"] = str(s["_id"])
+
+    today_date       = datetime.now().strftime("%Y-%m-%d")
     all_appointments = list(appointments_col.find({"date": today_date}).sort("token", 1))
+    for a in all_appointments:
+        a["_id"] = str(a["_id"])
+
+    # Total patients
+    total_patients = patients_col.count_documents({})
+
+    # Ambulance requests
+    emg_col     = appointments_col.database["ambulance_requests"]
+    emergencies = list(emg_col.find().sort("created_at", -1).limit(50))
+    for e in emergencies:
+        e["_id"] = str(e["_id"])
+
+    # Verified bills (paid)
+    bills_col     = prescriptions_col.database["bills"]
+    verified_bills = list(bills_col.find({"status": "paid"}).sort("verified_at", -1).limit(30))
+    for b in verified_bills:
+        b["_id"] = str(b["_id"])
+
+    # Overdue bills (sent > 24h ago, not paid)
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    overdue_bills = list(bills_col.find({
+        "status":     {"$in": ["sent", "payment_submitted"]},
+        "created_at": {"$lt": cutoff}
+    }).sort("created_at", 1))
+    for b in overdue_bills:
+        b["_id"] = str(b["_id"])
+
+    # All doctor ratings/reviews
+    all_ratings = list(ratings_col.find().sort("submitted_at", -1).limit(50))
+    for r in all_ratings:
+        r["_id"] = str(r["_id"])
+        if r.get("appointment_id"):
+            r["appointment_id"] = str(r["appointment_id"])
 
     return render_template(
         "admin_dashboard.html",
@@ -1483,6 +1595,11 @@ def admin_dashboard():
         staff=staff,
         emergencies=emergencies,
         all_appointments=all_appointments,
+        total_patients=total_patients,
+        verified_bills=verified_bills,
+        overdue_bills=overdue_bills,
+        all_ratings=all_ratings,
+        today_date=today_date,
     )
 
 
@@ -1578,4 +1695,9 @@ def admin_delete_staff():
 
 # ================= RUN =================
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Start reminder scheduler only in the main process (not the reloader child)
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        start_reminder_scheduler(appointments_col, patients_col)
+    app.run(debug=True, host="0.0.0.0", port=5000)

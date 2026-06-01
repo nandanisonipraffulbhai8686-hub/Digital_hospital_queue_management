@@ -1,0 +1,2205 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<!-- ==================== HEADER ==================== -->
+<div class="top-header">
+    <div class="header">
+        👋 Welcome {{ patient.name }}
+        {% if not patient.get('mobile') or not patient.get('email') or not patient.get('age') %}
+        <span style="background:#ef4444;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle;">⚠️ Profile Incomplete</span>
+        {% endif %}
+    </div>
+    <div class="header-actions">
+        <button class="hdr-btn hdr-btn-emerald" onclick="openPanel('prescriptions')">
+            <span class="hdr-icon">💊</span>
+            <span class="hdr-label">Prescriptions</span>
+            {% if prescriptions and prescriptions|length > 0 %}
+            <span class="hdr-badge hdr-badge-green">{{ prescriptions|length }}</span>
+            {% endif %}
+        </button>
+        {% set completed_count = history|selectattr("status","equalto","Completed")|list|length %}
+        <button class="hdr-btn hdr-btn-gold" onclick="openPanel('reviews')">
+            <span class="hdr-icon">⭐</span>
+            <span class="hdr-label">Reviews</span>
+            {% if completed_count > 0 %}
+            <span class="hdr-badge hdr-badge-gold">{{ completed_count }}</span>
+            {% endif %}
+        </button>
+        <button class="hdr-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;" onclick="document.getElementById('profileModal').style.display='flex'">
+            <span class="hdr-icon">👤</span>
+            <span class="hdr-label">My Profile</span>
+        </button>
+        <button class="hdr-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openPanel('bills')">
+            <span class="hdr-icon">💳</span>
+            <span class="hdr-label">My Bills</span>
+            {% if bills and bills|length > 0 %}
+            <span class="hdr-badge" style="background:#fff;color:#d97706;">{{ bills|length }}</span>
+            {% endif %}
+        </button>
+        <a href="/logout" class="hdr-btn hdr-btn-logout">
+            <span class="hdr-icon">🚪</span>
+            <span class="hdr-label">Logout</span>
+        </a>
+    </div>
+</div>
+
+<!-- ==================== PROFILE MODAL ==================== -->
+<div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 30px 80px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:20px 22px;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="color:#fff;font-size:18px;font-weight:800;margin:0;">👤 Complete Your Profile</h3>
+            <button onclick="document.getElementById('profileModal').style.display='none'" style="background:#fff;border:none;color:#333;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.15);">✕</button>
+        </div>
+        <form method="POST" action="/patient/update-profile" onsubmit="return validateProfileForm()">
+        <input type="hidden" name="username" value="{{ patient.username }}">
+        <div style="padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Mobile No *</label>
+                <input name="mobile" id="mobileInput" type="tel" value="{{ patient.get('mobile','') }}" placeholder="e.g. 9876543210"
+                    maxlength="10"
+                    oninput="validateMobile(this)"
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+                <div id="mobileError" style="display:none;color:#ef4444;font-size:11px;font-weight:700;margin-top:4px;">❌ Invalid mobile number. Must be 10 digits starting with 6-9.</div>
+                <div id="mobileOk" style="display:none;color:#16a34a;font-size:11px;font-weight:700;margin-top:4px;">✅ Valid mobile number</div>
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Email *</label>
+                <input name="email" id="emailInput" type="email" value="{{ patient.get('email','') }}" placeholder="your@gmail.com"
+                    oninput="validateEmail(this)"
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+                <div id="emailError" style="display:none;color:#ef4444;font-size:11px;font-weight:700;margin-top:4px;">❌ Invalid email address. Please enter a valid email (e.g. name@gmail.com)</div>
+                <div id="emailOk" style="display:none;color:#16a34a;font-size:11px;font-weight:700;margin-top:4px;">✅ Valid email address</div>
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Age *</label>
+                <input name="age" type="number" value="{{ patient.get('age','') }}" placeholder="e.g. 28" min="1" max="120"
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Gender</label>
+                <select name="gender" style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+                    <option value="">Select...</option>
+                    <option value="Male"   {% if patient.get('gender')=='Male'   %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if patient.get('gender')=='Female' %}selected{% endif %}>Female</option>
+                    <option value="Other"  {% if patient.get('gender')=='Other'  %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Blood Group</label>
+                <select name="blood" style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+                    <option value="">Select...</option>
+                    {% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+                    <option value="{{ bg }}" {% if patient.get('blood')==bg %}selected{% endif %}>{{ bg }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Address</label>
+                <input name="address" type="text" value="{{ patient.get('address','') }}" placeholder="City / Area"
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+            </div>
+        </div>
+        <div style="padding:0 22px 20px;display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" onclick="document.getElementById('profileModal').style.display='none'"
+                style="background:#f3f0ff;color:#7c3aed;border:2px solid #c4b5fd;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">Cancel</button>
+            <button type="submit"
+                style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">💾 Save Profile</button>
+        </div>
+        </form>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}
+<div class="flash {{ category }}">{{ message }}</div>
+{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="grid">
+
+<!-- ==================== STATS ==================== -->
+<div class="card stats-card">
+<h3>📊 Appointment Stats</h3>
+<div class="chart-wrap">
+    <canvas id="statsChart"></canvas>
+    <div id="chartEmptyState" class="chart-empty" style="display:none;">
+        <div class="chart-empty-icon">📊</div>
+        <div class="chart-empty-title">No Data Yet</div>
+        <div class="chart-empty-sub">Book your first appointment<br>to see stats here</div>
+    </div>
+</div>
+<div class="chart-legend">
+    <div class="cl-item"><span class="cl-dot" style="background:#2196F3"></span><span>Booked</span>
+        <span class="cl-count" style="background:#e3f2fd;color:#1565c0;">{{ appointments|selectattr("status","equalto","Booked")|list|length }}</span>
+    </div>
+    <div class="cl-item"><span class="cl-dot" style="background:#FFC107"></span><span>Rescheduled</span>
+        <span class="cl-count" style="background:#fff8e1;color:#e65100;">{{ appointments|selectattr("status","equalto","Rescheduled")|list|length }}</span>
+    </div>
+    <div class="cl-item"><span class="cl-dot" style="background:#4CAF50"></span><span>Completed</span>
+        <span class="cl-count" style="background:#e8f5e9;color:#2e7d32;">{{ history|selectattr("status","equalto","Completed")|list|length }}</span>
+    </div>
+    <div class="cl-item"><span class="cl-dot" style="background:#F44336"></span><span>Cancelled</span>
+        <span class="cl-count" style="background:#ffebee;color:#c62828;">{{ history|selectattr("status","equalto","Cancelled")|list|length }}</span>
+    </div>
+</div>
+</div>
+
+<!-- ==================== SMART CALENDAR ==================== -->
+<div class="card calendar-card">
+<div class="calendar-header">
+    <h3>📅 Smart Appointment Calendar</h3>
+    <div class="calendar-legend">
+        <span class="legend-item"><span class="dot dot-booked"></span> Booked</span>
+        <span class="legend-item"><span class="dot dot-rescheduled"></span> Rescheduled</span>
+        <span class="legend-item"><span class="dot dot-completed"></span> Completed</span>
+        <span class="legend-item"><span class="dot dot-cancelled"></span> Cancelled</span>
+    </div>
+</div>
+<div id="calendar"></div>
+</div>
+
+<!-- ==================== MY APPOINTMENTS ==================== -->
+<div class="card appointments-card">
+<h3>📋 My Appointments</h3>
+<div class="appointments-scroll">
+{% if appointments and appointments|length > 0 %}
+{% for a in appointments %}
+<div class="appointment-card">
+    <div class="appointment-header">
+        <span class="status-badge {{ a.status }}">{{ a.status }}</span>
+        <span class="token-badge">Token #{{ a.token }}</span>
+    </div>
+    <div class="appointment-details">
+        <p><span class="icon">👨‍⚕️</span><b>Doctor:</b> {{ a.doctor }}</p>
+        <p><span class="icon">📅</span><b>Date:</b> {{ a.date }}</p>
+        <p><span class="icon">⏰</span><b>Time:</b> {{ a.time }}</p>
+    </div>
+    <p><b>Queue Progress:</b></p>
+    <div class="progress-bar"><div class="progress" style="width:{{ [loop.index*10,100]|min }}%"></div></div>
+    <p class="wait">⏳ Estimated Wait: {{ loop.index * 8 }} mins</p>
+    {% if a.message %}<p class="notify">🔔 {{ a.message }}</p>{% endif %}
+    {% if a.status != "Completed" and a.status != "Cancelled" %}
+    <div class="action-buttons">
+        <button class="btn btn-cancel" onclick="openCancelModal('{{ a._id }}')">❌ Cancel</button>
+        <button class="btn btn-reschedule" onclick="openReschedule('{{ a._id }}')">🔁 Reschedule</button>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state"><p>📭 No appointments scheduled</p></div>
+{% endif %}
+</div>
+</div>
+
+<!-- ==================== BOOK APPOINTMENT ==================== -->
+<div class="card book-card">
+<h3>📅 Book New Appointment</h3>
+<form method="POST" action="/book-appointment" id="bookForm">
+<input type="hidden" name="username" value="{{ patient.username }}">
+<div class="form-group">
+    <label>👨‍⚕️ Select Doctor</label>
+    <input type="hidden" name="doctor" id="doctorHiddenInput" required>
+    <div class="doc-picker" id="docPickerTrigger" onclick="toggleDocDropdown()">
+        <span class="doc-picker-avatar" id="docPickerAvatar">👨‍⚕️</span>
+        <div class="doc-picker-text">
+            <span class="doc-picker-name" id="docPickerName">Choose a doctor…</span>
+            <span class="doc-picker-dept" id="docPickerDept"></span>
+        </div>
+        <span class="doc-picker-arrow" id="docPickerArrow">▾</span>
+    </div>
+    <div class="doc-dropdown" id="docDropdown">
+        <div class="doc-search-wrap">
+            <input class="doc-search-input" id="docSearchInput" placeholder="🔍  Search doctor or department…" oninput="filterDoctors(this.value)" onclick="event.stopPropagation()">
+        </div>
+        <div class="doc-list" id="docList">
+            {% if doctors %}
+                {% for d in doctors %}
+                <div class="doc-option" data-name="{{ d.name }}" data-dept="{{ d.department }}" onclick="selectDoctor('{{ d.name }}','{{ d.department }}')">
+                    <span class="doc-opt-avatar">
+                        {% set dept = d.department|lower %}
+                        {% if 'cardio' in dept %}❤️{% elif 'neuro' in dept %}🧠{% elif 'ortho' in dept %}🦴{% elif 'ent' in dept %}👂{% elif 'onco' in dept %}🎗️{% elif 'gynec' in dept or 'gynaec' in dept %}🌸{% elif 'urol' in dept %}💧{% elif 'derma' in dept %}🧴{% elif 'ophtha' in dept or 'eye' in dept %}👁️{% elif 'pedia' in dept %}👶{% else %}👨‍⚕️{% endif %}
+                    </span>
+                    <div class="doc-opt-info">
+                        <span class="doc-opt-name">{{ d.name }}</span>
+                        <span class="doc-opt-dept">{{ d.department }}</span>
+                    </div>
+                    <span class="doc-opt-check" id="check-{{ loop.index }}">✓</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="doc-opt-empty">No doctors available</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ==================== DOCTOR AVAILABILITY STATUS BOX ==================== -->
+<div id="doctorStatusBox" style="display:none;" class="doctor-status-box">
+    <div id="doctorStatusInner"></div>
+</div>
+
+<div class="form-group">
+    <label>📅 Date</label>
+    <input type="date" name="date" id="appointmentDate" required onchange="checkDoctorAvailability()">
+</div>
+<div class="form-group">
+    <label>⏰ Time</label>
+    <input type="time" name="time" id="appointmentTime" required onchange="checkDoctorAvailability()">
+</div>
+<button class="btn btn-primary btn-large" type="submit" id="bookSubmitBtn" onclick="return validateBookForm()">📝 Book Appointment</button>
+</form>
+</div>
+
+<!-- ==================== EMERGENCY ==================== -->
+<div class="card emergency-card">
+<h3>🚑 Emergency Services</h3>
+<p class="emergency-text">Need immediate medical attention?</p>
+<button class="btn btn-danger btn-large" onclick="openEmergencyModal()">🚨 Call Ambulance</button>
+</div>
+
+<!-- Emergency Modal -->
+<div id="emergencyOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#ef4444,#dc2626);padding:20px 22px;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="color:#fff;font-size:18px;font-weight:800;margin:0;">🚨 Request Emergency Help</h3>
+            <button onclick="closeEmergencyModal()" style="background:#fff;border:none;color:#333;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.15);">✕</button>
+        </div>
+        <div style="padding:20px 22px;">
+            <div style="margin-bottom:14px;">
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Your Location</label>
+                <input id="emg_location" type="text" placeholder="e.g. Home, Office, Street address..."
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:10px 13px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="font-size:11px;font-weight:800;color:#9490c0;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Reason / Symptoms</label>
+                <textarea id="emg_reason" placeholder="Describe the emergency briefly..."
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:10px 13px;font-size:13px;font-weight:600;color:#1e1b4b;outline:none;resize:vertical;min-height:80px;box-sizing:border-box;font-family:inherit;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="closeEmergencyModal()" style="background:#f3f0ff;color:#7c3aed;border:2px solid #c4b5fd;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">Cancel</button>
+                <button onclick="submitEmergency()" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;padding:10px 22px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🚨 Send Emergency Alert</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== FIND HOSPITAL ==================== -->
+<div class="card search-card">
+<h3>🏥 Find Nearest Hospital</h3>
+<div class="form-group" style="margin-bottom:12px;">
+    <label>Search by Disease / Specialty</label>
+    <input
+        id="diseaseInput"
+        placeholder="e.g., cardiac, neurology, dermatology…"
+        style="width:100%;padding:14px 16px;border:2px solid #c7d2fe;border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:all 0.3s;margin-bottom:10px;display:block;"
+        onkeydown="if(event.key==='Enter') searchHospital()"
+        onfocus="this.style.borderColor='#4CAF50';this.style.boxShadow='0 0 0 4px rgba(76,175,80,0.15)'"
+        onblur="this.style.borderColor='#c7d2fe';this.style.boxShadow='none'"
+    >
+    <button
+        class="btn btn-hospital btn-large"
+        style="width:100%;padding:14px;font-size:15px;border-radius:12px;"
+        onclick="searchHospital()">
+        🔍 Find Nearest Hospital
+    </button>
+</div>
+<div id="hospitalResult"></div>
+</div>
+
+<!-- ==================== BILLS ==================== -->
+{% if bills %}
+<div class="card" style="background:#fff;border-radius:18px;padding:20px 22px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <h3 style="font-size:17px;font-weight:800;color:#1e1b4b;margin-bottom:16px;">💳 My Bills</h3>
+    {% for b in bills %}
+    <div style="background:{% if b.status=='paid' %}#f0fdf4{% elif b.status=='payment_submitted' %}#fffbeb{% else %}#faf5ff{% endif %};border:1.5px solid {% if b.status=='paid' %}#86efac{% elif b.status=='payment_submitted' %}#fde68a{% else %}#c4b5fd{% endif %};border-radius:14px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+            <div>
+                <div style="font-size:14px;font-weight:800;color:#1e1b4b;">Dr. {{ b.doctor }}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px;">{{ b.date }}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:20px;font-weight:900;color:#7c3aed;">₹{{ "%.2f"|format(b.total_amount) }}</div>
+                <span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;
+                    background:{% if b.status=='paid' %}#dcfce7{% elif b.status=='payment_submitted' %}#fef3c7{% else %}#ede9fe{% endif %};
+                    color:{% if b.status=='paid' %}#16a34a{% elif b.status=='payment_submitted' %}#d97706{% else %}#7c3aed{% endif %};">
+                    {% if b.status=='paid' %}✅ Paid
+                    {% elif b.status=='payment_submitted' %}⏳ Verifying
+                    {% else %}💳 Pending Payment{% endif %}
+                </span>
+            </div>
+        </div>
+
+        {% if b.line_items %}
+        <div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:10px;">
+            {% for item in b.line_items %}
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#4b5563;padding:3px 0;">
+                <span>{{ item.medicine }} × {{ item.quantity|int }}</span>
+                <span style="font-weight:700;">₹{{ "%.2f"|format(item.subtotal) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if b.status == 'sent' %}
+        <form method="POST" action="/patient/pay-bill/{{ b.id }}" enctype="multipart/form-data" style="margin-top:14px;">
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:6px;">📎 Upload Payment Screenshot</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="file" name="screenshot" accept="image/*" required
+                    style="flex:1;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;">
+                <button type="submit"
+                    style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;">
+                    📤 Submit Payment
+                </button>
+            </div>
+        </form>
+        {% elif b.status == 'payment_submitted' %}
+        <div style="margin-top:12px;padding:10px;background:#fffbeb;border-radius:10px;border:1px solid #fde68a;">
+            <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px;">⏳ Payment screenshot submitted — awaiting staff verification</div>
+            <a href="{{ b.payment_screenshot }}" target="_blank"
+                style="font-size:12px;color:#7c3aed;font-weight:700;text-decoration:none;">🖼️ View uploaded screenshot</a>
+        </div>
+        {% elif b.status == 'paid' %}
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#16a34a;">✅ Payment verified by staff</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ==================== HISTORY ==================== -->
+<div class="card history-card">
+<h3>⭐ Previous Appointments</h3>
+<div class="history-scroll">
+{% set all_history = history + appointments %}
+{% for h in all_history %}
+{% if h.status in ["Completed","Cancelled","Booked","Rescheduled"] %}
+<div class="appointment-card history-item" id="history-{{ h._id | string }}">
+    <div class="appointment-header">
+        <span class="status-badge {{ h.status }}">{{ h.status }}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <span class="date-badge">{{ h.date }}</span>
+            <button class="btn-delete-history" onclick="deleteHistoryItem('{{ h._id | string }}')" title="Remove">✕</button>
+        </div>
+    </div>
+    <p><span class="icon">👨‍⚕️</span><b>Doctor:</b> {{ h.doctor }}</p>
+    <p><span class="icon">⏰</span><b>Time:</b> {{ h.time }}</p>
+    {% if h.token %}<p><span class="icon">🎫</span><b>Token:</b> {{ h.token }}</p>{% endif %}
+    {% if h.review and h.status == "Completed" %}
+    <div class="review-section">
+        <p class="rating">⭐ {{ h.rating }}/5</p>
+        <p class="review-text">{{ h.review }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state"><p>📋 No previous appointments</p></div>
+{% endfor %}
+</div>
+</div>
+
+</div><!-- end .grid -->
+
+<!-- ═══════════════════════════════════════════════
+     FLOATING CORNER THEME TOGGLE BUTTON
+═══════════════════════════════════════════════ -->
+<button class="theme-fab" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
+    <span class="theme-fab-icon" id="themeFabIcon">🌙</span>
+    <span class="theme-fab-ring"></span>
+</button>
+
+<!-- ==================== SLIDE PANELS ========================== -->
+<div id="panelOverlay" class="panel-overlay" onclick="closePanel()"></div>
+
+<!-- 💊 PRESCRIPTIONS PANEL -->
+<div id="prescriptionsPanel" class="slide-panel">
+    <div class="panel-header panel-header-green">
+        <div class="panel-title">
+            <span style="font-size:28px;">💊</span>
+            <div><h2>My Prescriptions</h2><p>Prescriptions from your doctors</p></div>
+        </div>
+        <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-body">
+    {% if prescriptions and prescriptions|length > 0 %}
+        {% for p in prescriptions %}
+        <div class="panel-presc-card">
+            <div class="ppc-top">
+                <div class="ppc-rx-badge">Rx #{{ p.serial }}</div>
+                <div class="ppc-date-badge">📅 {{ p.date }}</div>
+            </div>
+            <div class="ppc-doctor-row">
+                <div class="ppc-doc-icon">👨‍⚕️</div>
+                <div>
+                    <div class="ppc-doc-label">Prescribed by</div>
+                    <div class="ppc-doc-name">Dr. {{ p.doctor }}</div>
+                </div>
+            </div>
+            <div class="ppc-meds">
+                <div class="ppc-meds-title">💊 Medications</div>
+                <ul class="ppc-meds-list">{% for med in p.medications %}<li>{{ med }}</li>{% endfor %}</ul>
+            </div>
+            {% if p.notes %}<div class="ppc-notes"><b>📋 Doctor's Notes:</b> {{ p.notes }}</div>{% endif %}
+            <a href="{{ p.file_url }}" target="_blank" class="ppc-dl-btn">📥 Download Prescription PDF</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="panel-empty">
+            <div style="font-size:60px;margin-bottom:15px;">💊</div>
+            <p>No prescriptions yet</p>
+            <p style="font-size:14px;color:#aaa;margin-top:8px;">Your doctor will send prescriptions here after your appointment</p>
+        </div>
+    {% endif %}
+    </div>
+</div>
+
+<!-- 💳 BILLS PANEL -->
+<div id="billsPanel" class="slide-panel">
+    <div class="panel-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+        <div class="panel-title">
+            <span style="font-size:28px;">💳</span>
+            <div><h2>My Bills</h2><p>Bills sent by hospital staff</p></div>
+        </div>
+        <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-body">
+    {% if bills and bills|length > 0 %}
+        {% for b in bills %}
+        <div style="background:#fff;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1.5px solid
+            {% if b.status=='paid' %}#86efac{% elif b.status=='payment_submitted' %}#fde68a{% else %}#e9d5ff{% endif %};">
+
+            <!-- Bill Header -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                <div>
+                    <div style="font-size:15px;font-weight:800;color:#1e1b4b;">Dr. {{ b.doctor }}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:2px;">📅 {{ b.date }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:22px;font-weight:900;color:#7c3aed;">₹{{ "%.2f"|format(b.total_amount) }}</div>
+                    <span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;
+                        background:{% if b.status=='paid' %}#dcfce7{% elif b.status=='payment_submitted' %}#fef3c7{% else %}#ede9fe{% endif %};
+                        color:{% if b.status=='paid' %}#16a34a{% elif b.status=='payment_submitted' %}#d97706{% else %}#7c3aed{% endif %};">
+                        {% if b.status=='paid' %}✅ Paid
+                        {% elif b.status=='payment_submitted' %}⏳ Verifying
+                        {% else %}💳 Pending Payment{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Medicine Line Items -->
+            {% if b.line_items %}
+            <div style="background:#f9f7ff;border-radius:10px;padding:12px;margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Medicines</div>
+                {% for item in b.line_items %}
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#374151;padding:4px 0;border-bottom:1px solid #ede9fe;">
+                    <span>{{ item.medicine }} <span style="color:#9ca3af;">× {{ item.quantity|int }}</span></span>
+                    <span style="font-weight:700;color:#1e1b4b;">₹{{ "%.2f"|format(item.subtotal) }}</span>
+                </div>
+                {% endfor %}
+                <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;color:#7c3aed;padding-top:8px;margin-top:4px;">
+                    <span>Total</span>
+                    <span>₹{{ "%.2f"|format(b.total_amount) }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if b.notes %}
+            <div style="font-size:12px;color:#6b7280;margin-bottom:12px;font-style:italic;">📋 {{ b.notes }}</div>
+            {% endif %}
+
+            <!-- Payment Actions -->
+            {% if b.status == 'sent' %}
+            <form method="POST" action="/patient/pay-bill/{{ b.id }}" enctype="multipart/form-data">
+                <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px;">📎 Upload Payment Screenshot</div>
+                <input type="file" name="screenshot" accept="image/*" required
+                    style="width:100%;background:#f3f0ff;border:2px solid #c4b5fd;border-radius:10px;padding:8px 12px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:10px;">
+                <button type="submit"
+                    style="width:100%;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">
+                    📤 Submit Payment Proof
+                </button>
+            </form>
+
+            {% elif b.status == 'payment_submitted' %}
+            <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:12px;">
+                <div style="font-size:13px;font-weight:700;color:#d97706;margin-bottom:6px;">⏳ Screenshot submitted — awaiting staff verification</div>
+                <a href="{{ b.payment_screenshot }}" target="_blank"
+                    style="font-size:12px;color:#7c3aed;font-weight:700;text-decoration:none;">🖼️ View your screenshot</a>
+            </div>
+
+            {% elif b.status == 'paid' %}
+            <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:14px;font-weight:800;color:#16a34a;">✅ Payment verified by staff — Thank you!</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="panel-empty">
+            <div style="font-size:60px;margin-bottom:15px;">💳</div>
+            <p>No bills yet</p>
+            <p style="font-size:14px;color:#aaa;margin-top:8px;">Bills from staff will appear here after your appointment</p>
+        </div>
+    {% endif %}
+    </div>
+</div>
+
+<!-- ⭐ REVIEWS PANEL -->
+<div id="reviewsPanel" class="slide-panel">
+    <div class="panel-header panel-header-yellow">
+        <div class="panel-title">
+            <span style="font-size:28px;">⭐</span>
+            <div><h2>Reviews</h2><p>Rate your experience with doctors</p></div>
+        </div>
+        <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-body">
+        <div class="review-form-section">
+            <h4 class="panel-section-title">✍️ Write a Review</h4>
+            {% set completable = [] %}
+            {% for h in history %}{% if h.status == "Completed" and (h._id|string) not in reviewed_appointment_ids %}{% set _ = completable.append(h) %}{% endif %}{% endfor %}
+            {% if completable|length > 0 %}
+            <form method="POST" action="/submit-review" class="review-form">
+            <div class="form-group">
+                <label>Select Completed Appointment</label>
+                <select name="appointment_id" required>
+                    <option value="">-- Select an appointment --</option>
+                    {% for h in completable %}<option value="{{ h._id }}">{{ h.doctor }} — {{ h.date }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Rating</label>
+                <div class="star-picker">
+                    {% for i in [5,4,3,2,1] %}
+                    <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}required{% endif %}>
+                    <label for="star{{ i }}">{{ '⭐' * i }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Your Review</label>
+                <textarea name="review" rows="4" placeholder="Share your experience with the doctor..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-large">✅ Submit Review</button>
+            </form>
+            {% else %}
+            <div class="no-review-notice">
+                <div class="nrn-icon">🔒</div>
+                <div class="nrn-title">No Appointments to Review</div>
+                <div class="nrn-sub">Reviews are only available for <strong>Completed</strong> appointments.</div>
+                <div class="nrn-statuses">
+                    <span class="nrn-badge nrn-blocked">⏳ Pending</span>
+                    <span class="nrn-badge nrn-blocked">❌ Cancelled</span>
+                    <span class="nrn-badge nrn-blocked">🔁 Rescheduled</span>
+                    <span class="nrn-badge nrn-allowed">✅ Completed</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="past-reviews-section">
+            <h4 class="panel-section-title">📝 My Previous Reviews</h4>
+            {% set has_reviews = namespace(value=false) %}
+            {% for h in history %}{% if h.review and h.status == "Completed" %}{% set has_reviews.value = true %}
+            <div class="past-review-card">
+                <div class="prc-header">
+                    <div><div class="prc-doctor">{{ h.doctor }}</div><div class="prc-date">📅 {{ h.date }}</div></div>
+                    <div class="prc-rating">⭐ {{ h.rating }}/5</div>
+                </div>
+                <p class="prc-text">{{ h.review }}</p>
+            </div>
+            {% endif %}{% endfor %}
+            {% if not has_reviews.value %}
+            <div class="panel-empty" style="padding:30px 20px;">
+                <p>📝 No reviews yet</p>
+                <p style="font-size:13px;color:#bbb;margin-top:6px;">Complete an appointment and share your experience!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+<div id="cancelModal" class="modal">
+<div class="modal-content modal-animate">
+<h3>⚠️ Cancel Appointment?</h3><p>Are you sure you want to cancel this appointment?</p>
+<div class="modal-buttons">
+<button class="btn btn-secondary" onclick="closeCancel()">No, Keep It</button>
+<button class="btn btn-danger" onclick="confirmCancel()">Yes, Cancel</button>
+</div></div></div>
+
+<div id="rescheduleModal" class="modal">
+<div class="modal-content modal-animate">
+<h3>🔁 Reschedule Appointment</h3>
+<form method="POST" action="/reschedule-appointment">
+<input type="hidden" id="reschedule_id" name="appointment_id">
+<div class="form-group"><label>📅 New Date</label><input type="date" name="date" required></div>
+<div class="form-group"><label>⏰ New Time</label><input type="time" name="time" required></div>
+<div class="modal-buttons">
+<button type="button" class="btn btn-secondary" onclick="closeReschedule()">❌ Cancel</button>
+<button type="submit" class="btn btn-primary">✅ Reschedule</button>
+</div></form></div></div>
+
+<div id="deleteHistoryModal" class="modal">
+<div class="modal-content modal-animate">
+<h3>🗑️ Remove from History?</h3><p>Are you sure you want to remove this appointment?</p>
+<div class="modal-buttons">
+<button class="btn btn-secondary" onclick="closeDeleteHistory()">No, Keep It</button>
+<button class="btn btn-danger" onclick="confirmDeleteHistory()">Yes, Remove</button>
+</div></div></div>
+
+<div id="dotCancelModal" class="modal">
+<div class="modal-content modal-animate">
+<div id="dotCancelInfo" style="background:linear-gradient(135deg,#f5f7fa,#c3cfe2);border-radius:14px;padding:16px 18px;margin-bottom:20px;border-left:5px solid #667eea;"></div>
+<h3>⚠️ Cancel this Appointment?</h3><p>This will permanently cancel the appointment.</p>
+<div class="modal-buttons">
+<button class="btn btn-secondary" onclick="closeDotCancelModal()">No, Keep It</button>
+<button class="btn btn-danger" onclick="confirmDotCancel()">Yes, Cancel It</button>
+</div></div></div>
+
+<!-- ==================== STYLES ==================== -->
+<style>
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE CSS VARIABLES
+   Dark mode uses soft dark tones — not pitch black, comfortable
+═══════════════════════════════════════════════════════════════ */
+:root {
+    --bg-page:        #6b6fc5;
+    --bg-card:        #ffffff;
+    --bg-card-hover:  #ffffff;
+    --text-primary:   #333333;
+    --text-secondary: #555555;
+    --text-muted:     #888888;
+    --border-color:   #e0e0e0;
+    --input-bg:       #ffffff;
+    --input-border:   #e0e0e0;
+    --cl-item-bg:     #f8f9ff;
+    --cl-item-border: #eef0ff;
+    --appt-card-bg:   linear-gradient(135deg,#f5f7fa,#c3cfe2);
+    --appt-card-border: #667eea;
+    --hist-card-bg:   linear-gradient(135deg,#ffecd2,#fcb69f);
+    --hist-card-border: #ff6b6b;
+    --empty-color:    #999999;
+    --notify-bg:      linear-gradient(135deg,#fff3cd,#ffe8a1);
+    --modal-bg:       #ffffff;
+    --modal-overlay:  rgba(0,0,0,0.7);
+    --panel-bg:       #ffffff;
+    --doc-picker-bg:  #ffffff;
+    --doc-opt-hover:  #f0f4ff;
+    --doc-opt-border: #c7d2fe;
+    --doc-search-border: #e0e0e0;
+    --review-bg:      linear-gradient(135deg,#fff9e6,#fff3cd);
+    --past-review-bg: #ffffff;
+    --no-review-bg:   linear-gradient(135deg,#f8f9ff,#eef0ff);
+    --progress-track: #e0e0e0;
+    --hosp-field-bg:  #f8fffe;
+    --hosp-field-border: #e0f2e9;
+    --fc-bg:          #ffffff;
+    --fc-col-header:  #f8f9fa;
+    --fc-border:      #e0e0e0;
+    --fc-day-num:     #333333;
+    --ds-loading-bg:  linear-gradient(135deg,#f0f4ff,#eef0ff);
+    --ds-loading-border: #c7d2fe;
+}
+
+body.dark-mode {
+    --bg-page:        #1e2233;
+    --bg-card:        #272d3f;
+    --bg-card-hover:  #2e3550;
+    --text-primary:   #e8eaf0;
+    --text-secondary: #b8bdd0;
+    --text-muted:     #7a82a0;
+    --border-color:   #3a4060;
+    --input-bg:       #2e3550;
+    --input-border:   #3a4060;
+    --cl-item-bg:     #2e3550;
+    --cl-item-border: #3a4060;
+    --appt-card-bg:   linear-gradient(135deg,#2e3550,#3a4060);
+    --appt-card-border: #7c8fd4;
+    --hist-card-bg:   linear-gradient(135deg,#3d2f26,#4a3528);
+    --hist-card-border: #d4836b;
+    --empty-color:    #6b7290;
+    --notify-bg:      linear-gradient(135deg,#3d3520,#4a4025);
+    --modal-bg:       #272d3f;
+    --modal-overlay:  rgba(0,0,0,0.82);
+    --panel-bg:       #272d3f;
+    --doc-picker-bg:  #2e3550;
+    --doc-opt-hover:  #333a58;
+    --doc-opt-border: #4a5280;
+    --doc-search-border: #3a4060;
+    --review-bg:      linear-gradient(135deg,#2e2a1a,#38321e);
+    --past-review-bg: #2e3550;
+    --no-review-bg:   linear-gradient(135deg,#272d3f,#2e3550);
+    --progress-track: #3a4060;
+    --hosp-field-bg:  #2e3550;
+    --hosp-field-border: #3a4a40;
+    --fc-bg:          #272d3f;
+    --fc-col-header:  #2e3550;
+    --fc-border:      #3a4060;
+    --fc-day-num:     #c8ccdc;
+    --ds-loading-bg:  linear-gradient(135deg,#2a2e45,#2e3450);
+    --ds-loading-border: #4a5280;
+}
+
+/* ── Apply variables to body & page ── */
+body { background: linear-gradient(135deg, #7b7fd4 0%, #6366c1 100%) !important; min-height: 100vh; transition: background 0.35s ease, color 0.35s ease; }
+body.dark-mode { color: var(--text-primary); }
+
+/* ══════════════════════════════════════════════
+   FLOATING CORNER THEME TOGGLE (FAB)
+══════════════════════════════════════════════ */
+.theme-fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 9998;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1f38;
+    box-shadow:
+        0 0 0 6px rgba(255,255,255,0.08),
+        0 8px 28px rgba(0,0,0,0.45),
+        0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.3s ease,
+                background 0.35s ease;
+    outline: none;
+    overflow: visible;
+}
+.theme-fab:hover {
+    transform: scale(1.12) translateY(-3px);
+    box-shadow:
+        0 0 0 8px rgba(255,255,255,0.12),
+        0 14px 36px rgba(0,0,0,0.55),
+        0 4px 12px rgba(0,0,0,0.35);
+}
+.theme-fab:active {
+    transform: scale(0.95);
+}
+
+/* The icon inside */
+.theme-fab-icon {
+    font-size: 24px;
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+    display: block;
+}
+
+/* Outer glowing ring */
+.theme-fab-ring {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    pointer-events: none;
+    transition: border-color 0.35s ease;
+}
+.theme-fab:hover .theme-fab-ring {
+    border-color: rgba(255,255,255,0.28);
+}
+
+/* Light mode: show sun style */
+body:not(.dark-mode) .theme-fab {
+    background: #1a1f38;
+    box-shadow:
+        0 0 0 6px rgba(26,31,56,0.12),
+        0 8px 28px rgba(0,0,0,0.25),
+        0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Dark mode: slightly lighter background */
+body.dark-mode .theme-fab {
+    background: #252b45;
+    box-shadow:
+        0 0 0 6px rgba(255,255,255,0.07),
+        0 8px 28px rgba(0,0,0,0.55),
+        0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* Icon spin on toggle */
+@keyframes fabSpin {
+    from { transform: rotate(-30deg) scale(0.7); opacity: 0; }
+    to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+.theme-fab-icon.spinning {
+    animation: fabSpin 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* Ripple */
+@keyframes themeRipple {
+    from { transform: scale(0);   opacity: 0.5; }
+    to   { transform: scale(3.5); opacity: 0;   }
+}
+.theme-ripple {
+    position: absolute;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    pointer-events: none;
+    animation: themeRipple 0.55s ease-out forwards;
+    z-index: 1;
+    top: 0; left: 0;
+}
+
+/* ══════════════════════════════════════════════
+   DARK MODE OVERRIDES — Cards, text, inputs, etc.
+══════════════════════════════════════════════ */
+.dark-mode .card {
+    background: var(--bg-card) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35) !important;
+}
+.dark-mode .card:hover {
+    background: var(--bg-card-hover) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5) !important;
+}
+.dark-mode .card h3,
+.dark-mode .card h4,
+.dark-mode .card p,
+.dark-mode .card b,
+.dark-mode .card label {
+    color: var(--text-primary) !important;
+}
+.dark-mode .appointment-details p,
+.dark-mode .wait,
+.dark-mode .doc-opt-name,
+.dark-mode .prc-doctor {
+    color: var(--text-secondary) !important;
+}
+.dark-mode .text-muted,
+.dark-mode .prc-date,
+.dark-mode .doc-opt-dept,
+.dark-mode .doc-picker-dept {
+    color: var(--text-muted) !important;
+}
+
+/* Cards */
+.dark-mode .appointment-card {
+    background: var(--appt-card-bg) !important;
+    border-left-color: var(--appt-card-border) !important;
+}
+.dark-mode .history-item {
+    background: var(--hist-card-bg) !important;
+    border-left-color: var(--hist-card-border) !important;
+}
+.dark-mode .cl-item {
+    background: var(--cl-item-bg) !important;
+    border-color: var(--cl-item-border) !important;
+}
+.dark-mode .cl-item span:nth-child(2) { color: var(--text-secondary) !important; }
+
+/* Inputs */
+.dark-mode .form-group input,
+.dark-mode .form-group select,
+.dark-mode .form-group textarea,
+.dark-mode #diseaseInput {
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--text-primary) !important;
+}
+.dark-mode .form-group input:focus,
+.dark-mode .form-group select:focus,
+.dark-mode .form-group textarea:focus {
+    border-color: #7c8fd4 !important;
+    box-shadow: 0 0 0 4px rgba(124,143,212,0.18) !important;
+}
+.dark-mode .form-group input::placeholder,
+.dark-mode .form-group textarea::placeholder,
+.dark-mode #diseaseInput::placeholder { color: var(--text-muted) !important; }
+
+/* Doctor picker */
+.dark-mode .doc-picker {
+    background: var(--doc-picker-bg) !important;
+    border-color: var(--input-border) !important;
+}
+.dark-mode .doc-picker.selected {
+    background: linear-gradient(135deg,#1e3028,#243830) !important;
+}
+.dark-mode .doc-picker-name { color: var(--text-primary) !important; }
+.dark-mode .doc-dropdown {
+    background: var(--doc-picker-bg) !important;
+    border-color: #7c8fd4 !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45) !important;
+}
+.dark-mode .doc-search-input {
+    background: var(--input-bg) !important;
+    border-color: var(--doc-search-border) !important;
+    color: var(--text-primary) !important;
+}
+.dark-mode .doc-option:hover {
+    background: var(--doc-opt-hover) !important;
+    border-color: var(--doc-opt-border) !important;
+}
+.dark-mode .doc-option.active {
+    background: linear-gradient(135deg,#2e3550,#333a58) !important;
+    border-color: #7c8fd4 !important;
+}
+.dark-mode .doc-opt-avatar { background: #333a58 !important; }
+.dark-mode .doc-opt-empty { color: var(--text-muted) !important; }
+.dark-mode .doc-picker-avatar {
+    background: linear-gradient(135deg,#2e3550,#3a4060) !important;
+}
+
+/* Progress bar */
+.dark-mode .progress-bar { background: var(--progress-track) !important; }
+
+/* Notify */
+.dark-mode .notify {
+    background: var(--notify-bg) !important;
+    color: #c8a840 !important;
+}
+
+/* Review section */
+.dark-mode .review-section {
+    background: var(--cl-item-bg) !important;
+}
+.dark-mode .review-text { color: var(--text-secondary) !important; }
+
+/* Review form section */
+.dark-mode .review-form-section {
+    background: var(--review-bg) !important;
+    border-left-color: #c89040 !important;
+}
+.dark-mode .review-form .form-group input,
+.dark-mode .review-form .form-group select,
+.dark-mode .review-form .form-group textarea {
+    border-color: #5a4820 !important;
+}
+.dark-mode .star-picker label {
+    background: var(--input-bg) !important;
+    border-color: #5a4820 !important;
+    color: var(--text-primary) !important;
+}
+.dark-mode .star-picker label:hover { background: #3a3020 !important; }
+
+/* No review notice */
+.dark-mode .no-review-notice {
+    background: var(--no-review-bg) !important;
+    border-color: #4a5280 !important;
+}
+.dark-mode .nrn-title { color: #a0a8e0 !important; }
+.dark-mode .nrn-sub   { color: var(--text-muted) !important; }
+.dark-mode .nrn-blocked { background: #3a2020 !important; color: #e08080 !important; }
+
+/* Past review card */
+.dark-mode .past-review-card {
+    background: var(--past-review-bg) !important;
+    border-left-color: #4CAF50 !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.3) !important;
+}
+.dark-mode .prc-text { color: var(--text-secondary) !important; }
+
+/* Modals */
+.dark-mode .modal { background: var(--modal-overlay) !important; }
+.dark-mode .modal-content {
+    background: var(--modal-bg) !important;
+    box-shadow: 0 25px 70px rgba(0,0,0,0.7) !important;
+}
+.dark-mode .modal-content h3 { color: var(--text-primary) !important; }
+.dark-mode .modal-content p  { color: var(--text-secondary) !important; }
+.dark-mode .btn-secondary {
+    background: #3a4060 !important;
+    color: var(--text-primary) !important;
+}
+.dark-mode #dotCancelInfo {
+    background: linear-gradient(135deg,#2e3550,#3a4060) !important;
+    border-left-color: #7c8fd4 !important;
+}
+.dark-mode #dotCancelInfo p { color: var(--text-primary) !important; }
+
+/* Slide panels */
+.dark-mode .slide-panel {
+    background: var(--panel-bg) !important;
+    box-shadow: -20px 0 60px rgba(0,0,0,0.6) !important;
+}
+.dark-mode .panel-section-title {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+.dark-mode .panel-empty p { color: var(--text-muted) !important; }
+.dark-mode .panel-body { background: var(--panel-bg) !important; }
+.dark-mode .panel-presc-card {
+    background: linear-gradient(135deg,#1e3028,#243830) !important;
+    border-left-color: #4CAF50 !important;
+}
+.dark-mode .ppc-doctor-row {
+    background: var(--cl-item-bg) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+.dark-mode .ppc-doc-name  { color: var(--text-primary) !important; }
+.dark-mode .ppc-doc-label { color: var(--text-muted) !important; }
+.dark-mode .ppc-meds {
+    background: var(--cl-item-bg) !important;
+    border-left-color: #4CAF50 !important;
+}
+.dark-mode .ppc-meds-list li { color: var(--text-secondary) !important; }
+.dark-mode .ppc-notes {
+    background: #3a3020 !important;
+    border-left-color: #FFC107 !important;
+    color: #c8a840 !important;
+}
+
+/* Prescription */
+.dark-mode .prescriptions-panel,
+.dark-mode #prescriptionsPanel { background: var(--panel-bg) !important; }
+
+/* Empty states */
+.dark-mode .empty-state p { color: var(--empty-color) !important; }
+
+/* Calendar (FullCalendar) */
+.dark-mode #calendar { background: var(--fc-bg) !important; border-radius: 16px; }
+.dark-mode .fc-theme-standard td,
+.dark-mode .fc-theme-standard th { border-color: var(--fc-border) !important; }
+.dark-mode .fc-col-header-cell {
+    background: var(--fc-col-header) !important;
+    color: var(--text-primary) !important;
+}
+.dark-mode .fc .fc-daygrid-day-number { color: var(--fc-day-num) !important; }
+.dark-mode .fc .fc-day-today {
+    background: rgba(124,143,212,0.12) !important;
+}
+.dark-mode .fc-scrollgrid { background: var(--fc-bg) !important; }
+.dark-mode .fc .fc-daygrid-day { background: var(--fc-bg) !important; }
+.dark-mode .fc .fc-day-other { background: rgba(0,0,0,0.1) !important; }
+
+/* Calendar header */
+.dark-mode .calendar-header { border-bottom-color: var(--border-color) !important; }
+.dark-mode .legend-item {
+    background: var(--cl-item-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Hospital result */
+.dark-mode .hosp-field {
+    background: var(--hosp-field-bg) !important;
+    border-color: var(--hosp-field-border) !important;
+}
+.dark-mode .hosp-field-value { color: var(--text-primary) !important; }
+.dark-mode .hospital-result-card {
+    background: var(--bg-card) !important;
+    border-color: #3a5040 !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4) !important;
+}
+.dark-mode .hosp-not-found {
+    background: #3a2020 !important;
+    border-left-color: #e57373 !important;
+    color: #e08080 !important;
+}
+
+/* Doctor status box */
+.dark-mode .ds-loading {
+    background: var(--ds-loading-bg) !important;
+    border-color: var(--ds-loading-border) !important;
+}
+.dark-mode .ds-available {
+    background: linear-gradient(135deg,#1e3028,#243830) !important;
+    border-color: #4a7a5a !important;
+}
+.dark-mode .ds-on_break {
+    background: linear-gradient(135deg,#3a2e10,#453818) !important;
+    border-color: #8a6820 !important;
+}
+.dark-mode .ds-on_leave {
+    background: linear-gradient(135deg,#3a1e1e,#452020) !important;
+    border-color: #804040 !important;
+}
+.dark-mode .ds-offline {
+    background: linear-gradient(135deg,#2a2a2a,#323232) !important;
+    border-color: #505050 !important;
+}
+.dark-mode .ds-available .ds-title  { color: #6ec890 !important; }
+.dark-mode .ds-on_break .ds-title   { color: #d4a048 !important; }
+.dark-mode .ds-on_leave .ds-title   { color: #e07070 !important; }
+.dark-mode .ds-offline .ds-title    { color: #a0a0a0 !important; }
+.dark-mode .ds-available .ds-msg    { color: #5ab880 !important; }
+.dark-mode .ds-on_break .ds-msg     { color: #c09038 !important; }
+.dark-mode .ds-on_leave .ds-msg     { color: #c06060 !important; }
+.dark-mode .ds-offline .ds-msg      { color: #888888 !important; }
+
+/* Dot popover */
+.dark-mode .dot-popover {
+    background: var(--modal-bg) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
+    border-top-color: #7c8fd4 !important;
+}
+.dark-mode .dot-popover-title { color: var(--text-primary) !important; }
+.dark-mode .dot-popover-sub   { color: var(--text-secondary) !important; }
+.dark-mode .dot-popover-divider { border-top-color: var(--border-color) !important; }
+.dark-mode .dp-cancel    { background: #3a1e1e !important; color: #e08080 !important; border-color: #6a2020 !important; }
+.dark-mode .dp-reschedule{ background: #2a2240 !important; color: #a090e0 !important; border-color: #4a3890 !important; }
+.dark-mode .dp-delete    { background: #3a2a10 !important; color: #d4a040 !important; border-color: #6a4820 !important; }
+.dark-mode .dp-remove    { background: var(--cl-item-bg) !important; color: var(--text-secondary) !important; border-color: var(--border-color) !important; }
+.dark-mode .dp-cancel .dp-icon    { background: #6a2020 !important; }
+.dark-mode .dp-reschedule .dp-icon{ background: #4a3890 !important; }
+.dark-mode .dp-delete .dp-icon    { background: #6a4820 !important; }
+.dark-mode .dp-remove .dp-icon    { background: var(--border-color) !important; }
+.dark-mode .dp-close { color: var(--text-muted) !important; }
+
+/* Flash messages */
+.dark-mode .flash.success { background: #2e5a2e !important; }
+.dark-mode .flash.error   { background: #5a2020 !important; }
+.dark-mode .flash.warning { background: #5a4010 !important; }
+.dark-mode .flash.info    { background: #1a3a5a !important; }
+
+/* Global transition for smooth theme switching */
+*, *::before, *::after {
+    transition:
+        background-color 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease,
+        color 0.25s ease !important;
+}
+/* But don't transition transforms (would break animations) */
+.card, .btn, .hdr-btn, .theme-toggle, .theme-thumb, .appointment-card {
+    transition:
+        background-color 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease,
+        color 0.25s ease,
+        transform 0.3s ease !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ORIGINAL STYLES (unchanged)
+══════════════════════════════════════════════════════════════ */
+* { box-sizing:border-box; }
+.flash{padding:14px 18px;border-radius:10px;margin-bottom:15px;font-size:17px;font-weight:600;color:white;animation:slideDown 0.3s ease;}
+@keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.flash.success{background:#4CAF50}.flash.error{background:#F44336}.flash.warning{background:#FF9800}.flash.info{background:#2196F3}
+
+.top-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;padding:18px 22px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:20px;box-shadow:0 8px 32px rgba(102,126,234,0.35);}
+.header{font-size:22px;font-weight:800;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.18);letter-spacing:-0.3px;}
+.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.hdr-btn{padding:0;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:0;text-decoration:none;position:relative;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.18);}
+.hdr-btn:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 10px 28px rgba(0,0,0,0.28);text-decoration:none;}
+.hdr-btn:active{transform:translateY(-1px) scale(0.99);}
+.hdr-icon{font-size:18px;padding:11px 12px 11px 16px;display:flex;align-items:center;position:relative;z-index:1;}
+.hdr-label{padding:11px 16px 11px 4px;color:white;position:relative;z-index:1;white-space:nowrap;}
+.hdr-badge{position:absolute;top:-6px;right:-6px;font-size:11px;font-weight:900;padding:3px 7px;border-radius:12px;min-width:20px;text-align:center;border:2px solid white;animation:badgePop 0.4s cubic-bezier(0.34,1.56,0.64,1);z-index:2;}
+@keyframes badgePop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.hdr-badge-green,.hdr-badge-gold{background:#ff5252;color:white;}
+.hdr-btn-emerald{background:linear-gradient(135deg,#00b09b,#22c55e);box-shadow:0 4px 18px rgba(34,197,94,0.45);}
+.hdr-btn-emerald .hdr-icon{background:rgba(0,0,0,0.12);}
+.hdr-btn-emerald:hover{background:linear-gradient(135deg,#00d4b4,#16a34a);}
+.hdr-btn-gold{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 4px 18px rgba(245,158,11,0.45);}
+.hdr-btn-gold .hdr-icon{background:rgba(0,0,0,0.12);}
+.hdr-btn-logout{background:linear-gradient(135deg,#e53935,#c62828);box-shadow:0 4px 18px rgba(229,57,53,0.45);}
+.hdr-btn-logout .hdr-icon{background:rgba(0,0,0,0.12);}
+.hdr-btn::after{content:'';position:absolute;top:0;left:-120%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);transition:left 0.55s ease;pointer-events:none;}
+.hdr-btn:hover::after{left:160%;}
+
+/* ── Stats Chart ── */
+.chart-wrap{position:relative;width:100%;height:220px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.chart-wrap canvas{max-width:200px !important;max-height:200px !important;}
+.chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.chart-empty-icon{font-size:40px;margin-bottom:8px;line-height:1;}
+.chart-empty-title{font-size:15px;font-weight:800;color:#667eea;margin-bottom:4px;}
+.chart-empty-sub{font-size:12px;color:#aaa;text-align:center;line-height:1.5;}
+.chart-legend{display:flex;flex-direction:column;gap:7px;padding:0 2px;}
+.cl-item{display:flex;align-items:center;gap:8px;background:#f8f9ff;border-radius:10px;padding:9px 12px;border:1.5px solid #eef0ff;min-width:0;}
+.cl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cl-item span:nth-child(2){font-size:13px;font-weight:600;color:#555;flex:1;white-space:nowrap;}
+.cl-count{font-size:13px;font-weight:800;padding:3px 10px;border-radius:8px;min-width:28px;text-align:center;flex-shrink:0;}
+
+.card{background:white;padding:30px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.1);margin-bottom:25px;transition:all 0.3s;}
+.card:hover{transform:translateY(-5px);box-shadow:0 15px 40px rgba(0,0,0,0.15);}
+.card h3{margin-bottom:20px;color:#333;font-size:24px;font-weight:700;}
+.calendar-card{grid-column:span 2;padding:30px;}
+@media(max-width:768px){.calendar-card{grid-column:span 1;}}
+
+.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap;gap:15px;padding-bottom:20px;border-bottom:3px solid #f0f0f0;}
+.calendar-legend{display:flex;gap:12px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:7px;background:#f5f7fa;padding:7px 13px;border-radius:20px;font-size:13px;font-weight:600;color:#555;border:2px solid #e0e0e0;}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+.dot-booked{background:#2196F3}.dot-rescheduled{background:#FFC107}.dot-completed{background:#4CAF50}.dot-cancelled{background:#F44336}
+#calendar{background:white;border-radius:16px;padding:20px;}
+.grid{overflow:visible;}
+.fc .fc-toolbar{margin-bottom:25px;padding:15px 20px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;}
+.fc .fc-toolbar-title{font-size:26px;font-weight:700;color:white !important;}
+.fc .fc-toolbar-chunk{display:flex;align-items:center;gap:12px;}
+.fc-button{background:white !important;border:2px solid rgba(255,255,255,0.3) !important;border-radius:10px !important;padding:10px 18px !important;font-weight:700 !important;font-size:14px !important;transition:all 0.3s !important;color:#667eea !important;}
+.fc-button:hover{background:#f0f0f0 !important;color:#667eea !important;}
+.fc-button-active{background:#667eea !important;color:white !important;border-color:#667eea !important;}
+.fc-icon{color:#667eea !important;}.fc-button-active .fc-icon{color:white !important;}
+.fc-button:not(:disabled){color:#667eea !important;}.fc-button-active:not(:disabled){color:white !important;}
+.fc-theme-standard td,.fc-theme-standard th{border-color:#e0e0e0;}
+.fc-col-header-cell{padding:12px 0;background:#f8f9fa;font-weight:700;color:#333;text-transform:uppercase;font-size:13px;}
+.fc .fc-daygrid-day{min-height:55px !important;}
+.fc .fc-daygrid-day-frame{min-height:55px !important;padding:6px;display:flex;flex-direction:column;}
+.fc .fc-daygrid-day-number{font-size:14px;font-weight:700;padding:4px;color:#333;}
+.fc .fc-day-today{background:rgba(102,126,234,0.08) !important;}
+.fc .fc-day-today .fc-daygrid-day-number{background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;}
+.fc-daygrid-event{display:none !important;}
+.event-dot{width:12px;height:12px;border-radius:50%;display:inline-block;cursor:pointer;position:relative;transition:all 0.3s;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+.event-dot:hover{transform:scale(1.7);}
+
+.dot-popover{position:fixed;z-index:9999;background:white;border-radius:18px;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:300px;border-top:4px solid #667eea;animation:dotPopIn 0.25s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes dotPopIn{from{transform:scale(0.6) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.dot-popover-title{font-size:15px;font-weight:700;color:#333;margin-bottom:3px;}
+.dot-popover-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.6;}
+.dot-popover-divider{border:none;border-top:1px solid #f0f0f0;margin:0 0 14px;}
+.dp-action{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:11px;cursor:pointer;transition:all 0.2s;margin-bottom:7px;border:2px solid transparent;font-size:13px;font-weight:700;width:100%;background:none;text-align:left;}
+.dp-action:hover{transform:translateX(4px);}
+.dp-cancel{background:#fff5f5;color:#c62828;border-color:#ffcdd2;}.dp-cancel:hover{background:#ffebee;}
+.dp-reschedule{background:#f3f0ff;color:#5c35cc;border-color:#d1c4e9;}.dp-reschedule:hover{background:#ede7f6;}
+.dp-delete{background:#fff8f0;color:#e65100;border-color:#ffe0b2;}.dp-delete:hover{background:#fff3e0;}
+.dp-remove{background:#fafafa;color:#555;border-color:#e0e0e0;}.dp-remove:hover{background:#f5f5f5;}
+.dp-icon{font-size:16px;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dp-cancel .dp-icon{background:#ffcdd2;}.dp-reschedule .dp-icon{background:#d1c4e9;}.dp-delete .dp-icon{background:#ffe0b2;}.dp-remove .dp-icon{background:#e0e0e0;}
+.dp-label{display:flex;flex-direction:column;gap:1px;}
+.dp-label span:first-child{font-size:13px;font-weight:700;}
+.dp-label span:last-child{font-size:11px;opacity:0.65;}
+.dp-close{display:block;text-align:center;margin-top:13px;font-size:12px;color:#bbb;cursor:pointer;background:none;border:none;width:100%;padding:4px 0;}
+.dp-close:hover{color:#667eea;}
+
+.appointments-scroll,.history-scroll{max-height:500px;overflow-y:auto;padding-right:5px;}
+.appointments-scroll::-webkit-scrollbar,.history-scroll::-webkit-scrollbar{width:7px;}
+.appointments-scroll::-webkit-scrollbar-thumb,.history-scroll::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;}
+.appointment-card{background:linear-gradient(135deg,#f5f7fa,#c3cfe2);padding:20px;border-radius:15px;margin-bottom:15px;border-left:5px solid #667eea;transition:all 0.3s;}
+.appointment-card:hover{transform:translateX(5px);box-shadow:0 8px 24px rgba(102,126,234,0.3);}
+.appointment-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+.status-badge{padding:7px 13px;border-radius:20px;color:white;font-size:12px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.status-badge.Booked{background:linear-gradient(135deg,#2196F3,#1976D2)}
+.status-badge.Rescheduled{background:linear-gradient(135deg,#FFC107,#FF9800)}
+.status-badge.Cancelled{background:linear-gradient(135deg,#F44336,#D32F2F)}
+.status-badge.Completed{background:linear-gradient(135deg,#4CAF50,#388E3C)}
+.token-badge,.date-badge{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:7px 13px;border-radius:20px;font-weight:700;font-size:13px;white-space:nowrap;}
+.appointment-details p{margin:10px 0;font-size:15px;color:#333;font-weight:500;}
+.icon{margin-right:8px;}
+.progress-bar{background:#e0e0e0;height:13px;border-radius:10px;overflow:hidden;margin:10px 0;}
+.progress{background:linear-gradient(90deg,#667eea,#764ba2);height:100%;}
+.wait{font-size:14px;color:#666;font-weight:600;}
+.notify{background:linear-gradient(135deg,#fff3cd,#ffe8a1);padding:11px;border-radius:10px;margin:10px 0;color:#856404;border-left:4px solid #FFC107;font-weight:600;}
+
+/* ── Action Buttons: side by side ── */
+.action-buttons{display:flex;flex-direction:row;gap:10px;margin-top:15px;}
+.action-buttons .btn{flex:1;padding:11px 10px;font-size:14px;text-align:center;}
+
+.btn-delete-history{background:rgba(255,255,255,0.25);color:white;border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;padding:0;font-size:11px;font-weight:800;line-height:1;}
+.btn-delete-history:hover{background:#ef4444;border-color:#ef4444;transform:scale(1.1);}
+.history-item{background:linear-gradient(135deg,#ffecd2,#fcb69f);border-left:5px solid #ff6b6b;}
+@keyframes fadeOutSlide{from{opacity:1;max-height:300px;margin-bottom:15px}to{opacity:0;max-height:0;margin-bottom:0;padding:0}}
+.history-item.removing{animation:fadeOutSlide 0.4s ease forwards;overflow:hidden;pointer-events:none;}
+.review-section{background:white;padding:11px;border-radius:10px;margin-top:10px;}
+.rating{font-weight:700;color:#ff9800;margin-bottom:5px;}.review-text{color:#555;font-style:italic;font-size:14px;}
+.emergency-card{background:linear-gradient(135deg,#ff6b6b,#ee5a6f);color:white;}
+.emergency-card h3,.emergency-text{color:rgba(255,255,255,0.97);}
+
+/* ── Doctor Picker ── */
+.doc-picker{display:flex;align-items:center;gap:11px;padding:11px 14px;border:2px solid #e0e0e0;border-radius:12px;cursor:pointer;transition:all 0.25s;background:white;user-select:none;position:relative;}
+.doc-picker:hover{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);}
+.doc-picker.open{border-color:#667eea;box-shadow:0 0 0 4px rgba(102,126,234,0.12);border-radius:12px 12px 0 0;}
+.doc-picker-avatar{font-size:22px;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#eef0ff,#dde1ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.doc-picker-text{flex:1;min-width:0;}
+.doc-picker-name{display:block;font-size:15px;font-weight:700;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-picker-dept{display:block;font-size:12px;color:#888;margin-top:1px;}
+.doc-picker-arrow{font-size:13px;color:#999;transition:transform 0.25s;}
+.doc-picker.open .doc-picker-arrow{transform:rotate(180deg);}
+.doc-picker.selected{border-color:#4CAF50;background:linear-gradient(135deg,#f0fff4,#e8f5e9);}
+.doc-picker.selected .doc-picker-name{color:#2e7d32;}
+.doc-dropdown{display:none;position:relative;border:2px solid #667eea;border-top:none;border-radius:0 0 12px 12px;background:white;box-shadow:0 12px 30px rgba(102,126,234,0.18);z-index:500;overflow:hidden;}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.doc-dropdown.open{display:block;animation:dropIn 0.2s ease;}
+.doc-search-wrap{padding:10px 10px 6px;}
+.doc-search-input{width:100%;padding:9px 13px;border:2px solid #e0e0e0;border-radius:9px;font-size:14px;outline:none;font-family:inherit;transition:border-color 0.2s;}
+.doc-search-input:focus{border-color:#667eea;}
+.doc-list{max-height:220px;overflow-y:auto;padding:4px 6px 8px;}
+.doc-list::-webkit-scrollbar{width:5px;}
+.doc-list::-webkit-scrollbar-thumb{background:#d0d5ff;border-radius:4px;}
+.doc-option{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;cursor:pointer;transition:all 0.18s;margin-bottom:3px;border:2px solid transparent;}
+.doc-option:hover{background:#f0f4ff;border-color:#c7d2fe;}
+.doc-option.active{background:linear-gradient(135deg,#eef0ff,#dde1ff);border-color:#667eea;}
+.doc-opt-avatar{font-size:20px;width:34px;height:34px;border-radius:9px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.doc-opt-info{flex:1;min-width:0;}
+.doc-opt-name{display:block;font-size:14px;font-weight:700;color:#333;}
+.doc-opt-dept{display:block;font-size:12px;color:#888;margin-top:1px;}
+.doc-opt-check{font-size:14px;color:#4CAF50;font-weight:800;opacity:0;transition:opacity 0.2s;}
+.doc-option.active .doc-opt-check{opacity:1;}
+.doc-opt-empty{text-align:center;padding:20px;color:#aaa;font-size:14px;}
+.doc-opt-hidden{display:none !important;}
+
+/* ══════════════════════════════════════════════════
+   DOCTOR AVAILABILITY STATUS BOX
+══════════════════════════════════════════════════ */
+.doctor-status-box {
+    margin: 12px 0 18px;
+    border-radius: 14px;
+    overflow: hidden;
+    animation: statusSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes statusSlideIn {
+    from { opacity:0; transform:translateY(-10px) scale(0.97); }
+    to   { opacity:1; transform:translateY(0)    scale(1);    }
+}
+.ds-available {
+    background: linear-gradient(135deg,#e8f5e9,#f0fff4);
+    border: 2px solid #a5d6a7;
+    border-left: 6px solid #4CAF50;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.ds-on_break {
+    background: linear-gradient(135deg,#fff8e1,#fffde7);
+    border: 2px solid #ffe082;
+    border-left: 6px solid #FFC107;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.ds-on_leave {
+    background: linear-gradient(135deg,#ffebee,#fce4ec);
+    border: 2px solid #ef9a9a;
+    border-left: 6px solid #F44336;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.ds-offline {
+    background: linear-gradient(135deg,#f5f5f5,#eeeeee);
+    border: 2px solid #bdbdbd;
+    border-left: 6px solid #757575;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.ds-loading {
+    background: linear-gradient(135deg,#f0f4ff,#eef0ff);
+    border: 2px solid #c7d2fe;
+    border-left: 6px solid #667eea;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ds-icon-wrap {
+    font-size: 28px;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.ds-available .ds-icon-wrap  { background: rgba(76,175,80,0.15); }
+.ds-on_break  .ds-icon-wrap  { background: rgba(255,193,7,0.15); }
+.ds-on_leave  .ds-icon-wrap  { background: rgba(244,67,54,0.15); }
+.ds-offline   .ds-icon-wrap  { background: rgba(117,117,117,0.12); }
+.ds-content { flex: 1; min-width: 0; }
+.ds-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ds-available .ds-title  { color: #2e7d32; }
+.ds-on_break  .ds-title  { color: #e65100; }
+.ds-on_leave  .ds-title  { color: #c62828; }
+.ds-offline   .ds-title  { color: #424242; }
+.ds-msg {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin: 0;
+}
+.ds-available .ds-msg  { color: #388e3c; }
+.ds-on_break  .ds-msg  { color: #bf360c; }
+.ds-on_leave  .ds-msg  { color: #b71c1c; }
+.ds-offline   .ds-msg  { color: #616161; }
+.ds-leave-dates {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.ds-leave-tag {
+    background: rgba(244,67,54,0.12);
+    color: #c62828;
+    border: 1.5px solid #ef9a9a;
+    border-radius: 20px;
+    padding: 3px 11px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.ds-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.ds-available .ds-pulse  { background: #4CAF50; box-shadow: 0 0 0 0 rgba(76,175,80,0.5); animation: pulseGreen 1.8s infinite; }
+.ds-on_break  .ds-pulse  { background: #FFC107; box-shadow: 0 0 0 0 rgba(255,193,7,0.5); animation: pulseYellow 1.8s infinite; }
+.ds-on_leave  .ds-pulse  { background: #F44336; }
+.ds-offline   .ds-pulse  { background: #757575; }
+@keyframes pulseGreen  { 0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,0.5)} 50%{box-shadow:0 0 0 7px rgba(76,175,80,0)} }
+@keyframes pulseYellow { 0%,100%{box-shadow:0 0 0 0 rgba(255,193,7,0.5)} 50%{box-shadow:0 0 0 7px rgba(255,193,7,0)} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.ds-spinner { display:inline-block; animation:spin 0.9s linear infinite; font-size:20px; }
+#bookSubmitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    filter: grayscale(0.4);
+}
+
+/* ── Hospital result card ── */
+.btn-hospital{background:linear-gradient(135deg,#4CAF50,#2e7d32);color:white;}
+.btn-hospital:hover{background:linear-gradient(135deg,#43a047,#1b5e20);}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.hospital-result-card{margin-top:16px;background:white;border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(76,175,80,0.22);border:2px solid #c8e6c9;animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+.hosp-header{background:linear-gradient(135deg,#2e7d32,#4CAF50);padding:18px 18px 16px;display:flex;flex-direction:column;gap:0;}
+.hosp-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.hosp-icon{font-size:26px;width:46px;height:46px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hosp-available{background:rgba(255,255,255,0.25);color:white;font-size:12px;font-weight:700;padding:5px 13px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.5);white-space:nowrap;}
+.hosp-title{font-size:16px;font-weight:800;color:white;line-height:1.3;word-break:break-word;}
+.hosp-subtitle{font-size:12px;color:rgba(255,255,255,0.8);font-weight:500;margin-top:4px;word-break:break-word;}
+.hosp-details{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.hosp-field{background:#f8fffe;border:1.5px solid #e0f2e9;border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:5px;width:100%;}
+.hosp-field-label{font-size:10px;font-weight:700;color:#66bb6a;text-transform:uppercase;letter-spacing:0.8px;}
+.hosp-field-value{font-size:15px;font-weight:800;color:#1a1a1a;word-break:break-word;white-space:normal;line-height:1.3;}
+.hosp-distance-val{font-size:15px;font-weight:800;color:#0d47a1;}
+.hosp-specialty-val{font-size:15px;font-weight:800;color:#4a148c;word-break:break-word;white-space:normal;}
+.hosp-not-found{margin-top:14px;background:#fff5f5;border-radius:14px;padding:16px 18px;border-left:4px solid #ef5350;display:flex;align-items:flex-start;gap:12px;color:#c62828;}
+
+/* Forms */
+.form-group{margin-bottom:18px;}
+.form-group label{display:block;margin-bottom:7px;font-weight:700;color:#555;font-size:14px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:13px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;transition:all 0.3s;font-family:inherit;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 4px rgba(102,126,234,0.1);}
+.btn{padding:12px 22px;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;transition:all 0.3s;text-align:center;display:inline-block;}
+.btn:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.2);}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:white;}
+.btn-danger{background:linear-gradient(135deg,#e53935,#c62828);color:white;}
+.btn-secondary{background:#ddd;color:#333;}
+.btn-cancel{background:linear-gradient(135deg,#f44336,#d32f2f);color:white;}
+.btn-reschedule{background:linear-gradient(135deg,#667eea,#764ba2);color:white;}
+.btn-large{width:100%;padding:15px;font-size:16px;}
+
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:2000;backdrop-filter:blur(8px);}
+.modal-content{background:white;padding:35px;border-radius:20px;margin:10% auto;width:90%;max-width:500px;box-shadow:0 25px 70px rgba(0,0,0,0.4);}
+.modal-animate{animation:modalSlideIn 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);}
+@keyframes modalSlideIn{from{transform:translateY(-100px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-content h3{margin-bottom:15px;color:#333;font-size:22px;}
+.modal-content p{margin-bottom:20px;color:#666;}
+.modal-buttons{display:flex;gap:12px;margin-top:22px;}
+.modal-buttons .btn{flex:1;}
+.empty-state{text-align:center;padding:40px 20px;color:#999;font-size:16px;font-weight:600;}
+
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;backdrop-filter:blur(6px);transition:opacity 0.3s;}
+.panel-overlay.active{display:block;animation:fadeInOverlay 0.3s ease;}
+@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}
+.slide-panel{position:fixed;top:0;right:-100%;width:min(520px,100vw);height:100%;background:white;z-index:3001;box-shadow:-20px 0 60px rgba(0,0,0,0.3);transition:right 0.4s cubic-bezier(0.34,1.56,0.64,1);display:flex;flex-direction:column;border-radius:20px 0 0 20px;}
+.slide-panel.open{right:0;}
+.panel-header{padding:28px 28px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-radius:20px 0 0 0;}
+.panel-header-green{background:linear-gradient(135deg,#00b09b,#22c55e);}
+.panel-header-yellow{background:linear-gradient(135deg,#e65100,#f59e0b);}
+.panel-title{display:flex;align-items:center;gap:14px;}
+.panel-title h2{margin:0;color:white;font-size:22px;font-weight:800;}
+.panel-title p{margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;}
+.panel-close{background:#fff;border:none;color:#333;font-size:18px;font-weight:700;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.panel-close:hover{background:#f3f4f6;transform:rotate(90deg);}
+.panel-body{flex:1;overflow-y:auto;padding:24px 28px;}
+.panel-body::-webkit-scrollbar{width:7px;}
+.panel-body::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;}
+.panel-section-title{font-size:16px;font-weight:800;color:#333;margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid #f0f0f0;}
+.panel-empty{text-align:center;padding:60px 20px;color:#bbb;}
+.panel-empty p{font-size:16px;font-weight:600;}
+.panel-presc-card{background:linear-gradient(135deg,#f0fff4,#d4f5e2);border-radius:16px;padding:20px;border-left:5px solid #4CAF50;margin-bottom:18px;transition:all 0.3s;}
+.panel-presc-card:hover{transform:translateY(-3px);box-shadow:0 10px 25px rgba(76,175,80,0.2);}
+.ppc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.ppc-rx-badge{background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-size:12px;font-weight:700;padding:5px 13px;border-radius:20px;}
+.ppc-date-badge{background:linear-gradient(135deg,#4CAF50,#388E3C);color:white;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;}
+.ppc-doctor-row{display:flex;align-items:center;gap:12px;background:white;border-radius:12px;padding:12px 14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.ppc-doc-icon{font-size:26px;}
+.ppc-doc-label{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.ppc-doc-name{font-size:16px;font-weight:700;color:#333;margin-top:2px;}
+.ppc-meds{background:white;border-radius:12px;padding:13px 14px;margin-bottom:11px;border-left:4px solid #4CAF50;}
+.ppc-meds-title{font-weight:700;color:#2e7d32;font-size:13px;margin-bottom:9px;}
+.ppc-meds-list{margin:0;padding-left:18px;color:#555;}
+.ppc-meds-list li{margin:5px 0;font-size:14px;line-height:1.5;}
+.ppc-notes{background:#fffde7;border-left:4px solid #FFC107;border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px;color:#666;line-height:1.5;}
+.ppc-dl-btn{display:block;width:100%;text-align:center;padding:13px;background:linear-gradient(135deg,#4CAF50,#388E3C);color:white;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;box-shadow:0 4px 14px rgba(76,175,80,0.4);transition:all 0.3s;}
+.ppc-dl-btn:hover{transform:translateY(-2px);text-decoration:none;color:white;}
+.review-form-section{background:linear-gradient(135deg,#fff9e6,#fff3cd);border-radius:16px;padding:22px;margin-bottom:22px;border-left:5px solid #f59e0b;}
+.review-form .form-group input,.review-form .form-group select,.review-form .form-group textarea{border:2px solid #ffe082;}
+.star-picker{display:flex;flex-direction:column;gap:8px;}
+.star-picker input[type="radio"]{display:none;}
+.star-picker label{cursor:pointer;font-size:20px;padding:9px 14px;border-radius:10px;transition:all 0.3s;background:white;border:2px solid #ffe082;display:block;}
+.star-picker label:hover{background:#fff3cd;border-color:#f59e0b;}
+.star-picker input[type="radio"]:checked + label{background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;border-color:#f59e0b;}
+.no-review-notice{text-align:center;padding:28px 20px;background:linear-gradient(135deg,#f8f9ff,#eef0ff);border-radius:14px;border:2px dashed #c7d2fe;}
+.nrn-icon{font-size:42px;margin-bottom:10px;}
+.nrn-title{font-size:17px;font-weight:800;color:#3730a3;margin-bottom:8px;}
+.nrn-sub{font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:18px;}
+.nrn-statuses{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.nrn-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;}
+.nrn-blocked{background:#fee2e2;color:#991b1b;opacity:0.7;}
+.nrn-allowed{background:linear-gradient(135deg,#4CAF50,#388E3C);color:white;}
+.past-reviews-section{margin-top:8px;}
+.past-review-card{background:white;border-radius:14px;padding:18px;margin-bottom:14px;border-left:5px solid #4CAF50;box-shadow:0 3px 12px rgba(0,0,0,0.07);transition:all 0.3s;}
+.past-review-card:hover{transform:translateY(-3px);}
+.prc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.prc-doctor{font-size:16px;font-weight:700;color:#333;}
+.prc-date{font-size:12px;color:#888;margin-top:3px;}
+.prc-rating{background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;padding:6px 14px;border-radius:20px;font-weight:700;font-size:14px;white-space:nowrap;}
+.prc-text{color:#555;font-size:14px;line-height:1.6;margin:0;}
+</style>
+
+<!-- ==================== SCRIPT ==================== -->
+<script>
+
+/* ══════════════════════════════════════════════════════
+   THEME TOGGLE LOGIC
+══════════════════════════════════════════════════════ */
+(function() {
+    // Restore saved preference on page load
+    var saved = localStorage.getItem('dashboardTheme');
+    if (saved === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+})();
+
+function toggleTheme() {
+    var btn  = document.getElementById('themeToggle');
+    var icon = document.getElementById('themeFabIcon');
+    var isDark = document.body.classList.toggle('dark-mode');
+
+    // Save preference
+    localStorage.setItem('dashboardTheme', isDark ? 'dark' : 'light');
+
+    // Swap icon with spin animation
+    icon.classList.remove('spinning');
+    void icon.offsetWidth; // reflow to restart animation
+    icon.textContent = isDark ? '☀️' : '🌙';
+    icon.classList.add('spinning');
+
+    // Ripple effect
+    var ripple = document.createElement('span');
+    ripple.className = 'theme-ripple';
+    btn.appendChild(ripple);
+    setTimeout(function(){ ripple.remove(); }, 580);
+}
+
+// Set correct icon on load
+(function() {
+    var icon = document.getElementById('themeFabIcon');
+    if (icon) {
+        icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    }
+})();
+
+/* ══════════════════════════════════════════════════════ */
+
+var _currentPanel = null;
+function openPanel(name) {
+    closePanel();
+    document.getElementById('panelOverlay').classList.add('active');
+    document.getElementById(name + 'Panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    _currentPanel = name;
+}
+function closePanel() {
+    document.getElementById('panelOverlay').classList.remove('active');
+    document.querySelectorAll('.slide-panel').forEach(function(p){ p.classList.remove('open'); });
+    document.body.style.overflow = '';
+    _currentPanel = null;
+}
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closePanel(); });
+
+var selectedAppointment = null, selectedHistoryId = null;
+var historyIdToDate = {};
+{% for h in history %}historyIdToDate["{{ h._id }}"] = "{{ h.date }}";{% endfor %}
+{% for a in appointments %}historyIdToDate["{{ a._id }}"] = "{{ a.date }}";{% endfor %}
+
+function removeCalendarDot(dateStr, id) {
+    var cell = document.querySelector('.fc-daygrid-day[data-date="'+dateStr+'"]'); if(!cell) return;
+    var dot = cell.querySelector('.event-dot[data-appointment-id="'+id+'"]'); if(!dot) return;
+    dot.style.transition='transform 0.25s,opacity 0.25s'; dot.style.transform='scale(0)'; dot.style.opacity='0';
+    setTimeout(function(){var c=dot.parentNode;dot.remove();if(c&&c.querySelectorAll('.event-dot').length===0)c.remove();},260);
+}
+function afterCardRemoved(card) {
+    card.remove();
+    var hs=document.querySelector('.history-scroll');
+    if(hs&&hs.querySelectorAll('.appointment-card').length===0) hs.innerHTML='<div class="empty-state"><p>📋 No previous appointments</p></div>';
+}
+function openCancelModal(id){ selectedAppointment=id; document.getElementById('cancelModal').style.display='block'; }
+function closeCancel(){ document.getElementById('cancelModal').style.display='none'; }
+function confirmCancel(){
+    fetch('/cancel-appointment',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'appointment_id='+selectedAppointment})
+    .then(()=>location.reload());
+}
+function openReschedule(id){ document.getElementById('reschedule_id').value=id; document.getElementById('rescheduleModal').style.display='block'; }
+function closeReschedule(){ document.getElementById('rescheduleModal').style.display='none'; }
+function deleteHistoryItem(id){ selectedHistoryId=id; document.getElementById('deleteHistoryModal').style.display='block'; }
+function closeDeleteHistory(){ document.getElementById('deleteHistoryModal').style.display='none'; selectedHistoryId=null; }
+function confirmDeleteHistory(){
+    if(!selectedHistoryId) return;
+    var id=selectedHistoryId, card=document.getElementById('history-'+id), dateStr=historyIdToDate[id];
+    if(dateStr){ removeCalendarDot(dateStr,id); delete historyIdToDate[id]; }
+    if(card) card.classList.add('removing');
+    closeDeleteHistory();
+    fetch('/delete-history',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'appointment_id='+id}).catch(e=>console.error(e));
+    if(card) setTimeout(()=>afterCardRemoved(card),420);
+}
+window.onclick=function(e){ if(e.target.className==='modal') e.target.style.display='none'; };
+
+var _dotCancelId = null;
+function openDotCancelModal(apptId, doctor, date, time) {
+    _dotCancelId = apptId;
+    var info = document.getElementById('dotCancelInfo');
+    info.innerHTML = '<p style="margin:0 0 4px;font-weight:700;color:#333;font-size:15px;">👨‍⚕️ Dr. ' + doctor + '</p>' +
+        '<p style="margin:0;color:#666;font-size:14px;">📅 ' + date + (time ? '  ⏰ ' + time : '') + '</p>';
+    document.getElementById('dotCancelModal').style.display = 'block';
+}
+function closeDotCancelModal(){ document.getElementById('dotCancelModal').style.display='none'; _dotCancelId=null; }
+function confirmDotCancel(){
+    if(!_dotCancelId) return;
+    var id = _dotCancelId; closeDotCancelModal();
+    fetch('/cancel-appointment',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'appointment_id='+id})
+    .then(function(){ location.reload(); });
+}
+
+/* ════════════════════════════════════════════════════════════
+   DOCTOR AVAILABILITY STATUS FEATURE
+════════════════════════════════════════════════════════════ */
+var _doctorDataMap = {};
+{% if doctors %}
+{% for d in doctors %}
+_doctorDataMap["{{ d.name }}"] = {
+    name:        "{{ d.name }}",
+    dept:        "{{ d.department }}",
+    status:      "{{ d.status }}",
+    status_msg:  {{ d.status_msg | tojson }},
+    break_start: "{{ d.break_start }}",
+    break_end:   "{{ d.break_end }}",
+    leave_dates: {{ d.leave_dates | tojson }}
+};
+{% endfor %}
+{% endif %}
+
+var _selectedDoctorName = '';
+var _statusCheckBlock   = false;
+
+function getSelectedDate() { return document.getElementById('appointmentDate').value || ''; }
+function getSelectedTime() { return document.getElementById('appointmentTime').value || ''; }
+
+function checkDoctorAvailability() {
+    var name = _selectedDoctorName;
+    if (!name) { hideDoctorStatus(); return; }
+    var data = _doctorDataMap[name];
+    if (!data) { hideDoctorStatus(); return; }
+    var selDate = getSelectedDate();
+    var selTime = getSelectedTime();
+    showStatusLoading(name);
+    setTimeout(function() {
+        var result = computeAvailability(data, selDate, selTime);
+        renderStatusBox(data, result);
+    }, 80);
+}
+
+function computeAvailability(data, selDate, selTime) {
+    if (data.status === 'offline') {
+        return { status:'offline', title:'Doctor Offline / Not Available', icon:'⭕',
+            message:'Dr. ' + data.name + ' is currently offline and not accepting appointments. Please try another doctor.', leaveDates:[] };
+    }
+    var checkDate = selDate || getTodayStr();
+    if (data.leave_dates && data.leave_dates.indexOf(checkDate) !== -1) {
+        var today = getTodayStr();
+        var upcomingLeaves = data.leave_dates.filter(function(d){ return d >= today; }).sort();
+        return { status:'on_leave', title:'Doctor on Leave — ' + formatDate(checkDate), icon:'🏖️',
+            message:'Dr. ' + data.name + ' is on leave on ' + formatDate(checkDate) + '. Please select a different date.', leaveDates:upcomingLeaves };
+    }
+    if (selTime && data.break_start && data.break_end) {
+        var today2 = getTodayStr();
+        var relevantDate = selDate || today2;
+        if (relevantDate === today2) {
+            if (selTime >= data.break_start && selTime < data.break_end) {
+                return { status:'on_break', title:'Doctor on Lunch Break', icon:'☕',
+                    message:'Dr. ' + data.name + ' is on lunch break from ' + formatTime(data.break_start) + ' to ' + formatTime(data.break_end) + '. Please choose a time after ' + formatTime(data.break_end) + '.', leaveDates:[] };
+            }
+        }
+    }
+    var hint = '';
+    if (data.break_start && data.break_end) { hint = 'Lunch break: ' + formatTime(data.break_start) + ' – ' + formatTime(data.break_end) + '.'; }
+    var today3 = getTodayStr();
+    var upcomingLeaves2 = (data.leave_dates || []).filter(function(d){ return d > today3; }).sort().slice(0,5);
+    return { status:'available', title:'Doctor Available', icon:'✅',
+        message:'Dr. ' + data.name + ' is available and accepting appointments.' + (hint ? ' ' + hint : ''), leaveDates:upcomingLeaves2 };
+}
+
+function getTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function formatDate(ds) {
+    if (!ds) return '';
+    var parts = ds.split('-');
+    if (parts.length !== 3) return ds;
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parts[2] + ' ' + months[parseInt(parts[1],10)-1] + ' ' + parts[0];
+}
+function formatTime(ts) {
+    if (!ts) return '';
+    var parts = ts.split(':');
+    if (parts.length < 2) return ts;
+    var h = parseInt(parts[0],10), m = parts[1];
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    var h12  = h % 12 || 12;
+    return h12 + ':' + m + ' ' + ampm;
+}
+
+function showStatusLoading(name) {
+    var box = document.getElementById('doctorStatusBox');
+    var inner = document.getElementById('doctorStatusInner');
+    box.style.display = 'block';
+    inner.innerHTML =
+        '<div class="ds-loading">' +
+        '<span class="ds-spinner">🔄</span>' +
+        '<span style="font-size:14px;font-weight:600;color:#667eea;">Checking Dr. ' + name + '\'s availability…</span>' +
+        '</div>';
+    _statusCheckBlock = false;
+    updateBookButton();
+}
+function hideDoctorStatus() {
+    document.getElementById('doctorStatusBox').style.display = 'none';
+    document.getElementById('doctorStatusInner').innerHTML = '';
+    _statusCheckBlock = false;
+    updateBookButton();
+}
+function renderStatusBox(data, result) {
+    var box   = document.getElementById('doctorStatusBox');
+    var inner = document.getElementById('doctorStatusInner');
+    box.style.display = 'block';
+    var s = result.status;
+    _statusCheckBlock = (s !== 'available');
+    updateBookButton();
+    var leaveDateHTML = '';
+    if (result.leaveDates && result.leaveDates.length > 0) {
+        if (s === 'on_leave') {
+            leaveDateHTML += '<div class="ds-leave-dates" style="margin-top:8px;"><span style="font-size:12px;font-weight:700;color:#c62828;margin-right:4px;">All leave dates:</span>';
+            result.leaveDates.forEach(function(d) { leaveDateHTML += '<span class="ds-leave-tag">📅 ' + formatDate(d) + '</span>'; });
+            leaveDateHTML += '</div>';
+        } else if (s === 'available' && result.leaveDates.length > 0) {
+            leaveDateHTML += '<div class="ds-leave-dates" style="margin-top:8px;"><span style="font-size:12px;font-weight:600;color:#e65100;margin-right:4px;">Upcoming leaves:</span>';
+            result.leaveDates.forEach(function(d) { leaveDateHTML += '<span class="ds-leave-tag" style="background:rgba(255,152,0,0.1);color:#e65100;border-color:#ffcc80;">📅 ' + formatDate(d) + '</span>'; });
+            leaveDateHTML += '</div>';
+        }
+    }
+    inner.innerHTML =
+        '<div class="ds-' + s + '">' +
+            '<div class="ds-icon-wrap">' + result.icon + '</div>' +
+            '<div class="ds-content">' +
+                '<div class="ds-title"><span class="ds-pulse"></span>' + result.title + '</div>' +
+                '<p class="ds-msg">' + result.message + '</p>' + leaveDateHTML +
+            '</div>' +
+        '</div>';
+    var el = inner.firstChild;
+    if (el) { el.style.animation = 'none'; el.offsetHeight; el.style.animation = ''; }
+}
+function updateBookButton() {
+    var btn = document.getElementById('bookSubmitBtn');
+    if (!btn) return;
+    if (_statusCheckBlock) { btn.disabled = true; btn.textContent = '🚫 Cannot Book — Doctor Unavailable'; }
+    else { btn.disabled = false; btn.textContent = '📝 Book Appointment'; }
+}
+
+/* ════════════════════════════════════════════════════════════ */
+
+var _selectedDoctor = '', _selectedDoctorDept = '', _docDropdownOpen = false;
+var _allDoctors = [
+    {% if doctors %}{% for d in doctors %}
+    { name: "{{ d.name }}", dept: "{{ d.department }}", idx: {{ loop.index }} }{% if not loop.last %},{% endif %}
+    {% endfor %}{% endif %}
+];
+
+function getDeptEmoji(dept) {
+    var d = dept.toLowerCase();
+    if(d.includes('cardio')) return '❤️'; if(d.includes('neuro')) return '🧠';
+    if(d.includes('ortho')) return '🦴'; if(d.includes('ent')) return '👂';
+    if(d.includes('onco')) return '🎗️'; if(d.includes('gynec')||d.includes('gynaec')) return '🌸';
+    if(d.includes('urol')) return '💧'; if(d.includes('derma')) return '🧴';
+    if(d.includes('ophtha')||d.includes('eye')) return '👁️'; if(d.includes('pedia')) return '👶';
+    return '👨‍⚕️';
+}
+function toggleDocDropdown() {
+    var dd=document.getElementById('docDropdown'), trigger=document.getElementById('docPickerTrigger');
+    _docDropdownOpen=!_docDropdownOpen;
+    dd.classList.toggle('open',_docDropdownOpen); trigger.classList.toggle('open',_docDropdownOpen);
+    if(_docDropdownOpen) setTimeout(function(){ document.getElementById('docSearchInput').focus(); },80);
+}
+function closeDocDropdown() {
+    if(!_docDropdownOpen) return; _docDropdownOpen=false;
+    document.getElementById('docDropdown').classList.remove('open');
+    document.getElementById('docPickerTrigger').classList.remove('open');
+}
+function selectDoctor(name, dept) {
+    _selectedDoctor=name; _selectedDoctorDept=dept; _selectedDoctorName=name;
+    document.getElementById('doctorHiddenInput').value=name;
+    document.getElementById('docPickerAvatar').textContent=getDeptEmoji(dept);
+    document.getElementById('docPickerName').textContent=name;
+    document.getElementById('docPickerDept').textContent=dept;
+    document.getElementById('docPickerTrigger').classList.add('selected');
+    document.querySelectorAll('.doc-option').forEach(function(el){ el.classList.toggle('active',el.getAttribute('data-name')===name); });
+    closeDocDropdown(); document.getElementById('docSearchInput').value=''; filterDoctors('');
+    checkDoctorAvailability();
+}
+function filterDoctors(query) {
+    var q=query.toLowerCase().trim();
+    document.querySelectorAll('.doc-option').forEach(function(el){
+        var match=!q||el.getAttribute('data-name').toLowerCase().includes(q)||el.getAttribute('data-dept').toLowerCase().includes(q);
+        el.classList.toggle('doc-opt-hidden',!match);
+    });
+    var visible=document.querySelectorAll('.doc-option:not(.doc-opt-hidden)').length;
+    var emptyEl=document.querySelector('.doc-opt-empty');
+    if(emptyEl) emptyEl.style.display=visible===0?'block':'none';
+}
+function validateBookForm() {
+    if(!_selectedDoctor){
+        document.getElementById('docPickerTrigger').style.border='2px solid #F44336';
+        document.getElementById('docPickerTrigger').style.animation='shake 0.35s';
+        setTimeout(function(){ document.getElementById('docPickerTrigger').style.border=''; document.getElementById('docPickerTrigger').style.animation=''; },600);
+        alert('⚠️ Please select a doctor before booking.'); return false;
+    }
+    if(_statusCheckBlock){
+        alert('⚠️ Cannot book: the doctor is not currently available. Please check the status message and try different date/time or doctor.');
+        return false;
+    }
+    return true;
+}
+document.addEventListener('click',function(e){ if(!e.target.closest('#docPickerTrigger')&&!e.target.closest('#docDropdown')) closeDocDropdown(); });
+
+function validateEmail(input){
+    var val = input.value.trim();
+    var err = document.getElementById('emailError');
+    var ok  = document.getElementById('emailOk');
+    if(!val){ err.style.display='none'; ok.style.display='none'; input.style.borderColor='#c4b5fd'; input.style.background='#f3f0ff'; return; }
+    // Valid email regex: must have @, domain, and extension
+    var valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val);
+    if(valid){
+        err.style.display='none';
+        ok.style.display='block';
+        input.style.borderColor='#22c55e';
+        input.style.background='#f0fdf4';
+    } else {
+        ok.style.display='none';
+        err.style.display='block';
+        input.style.borderColor='#ef4444';
+        input.style.background='#fff5f5';
+    }
+}
+
+function validateMobile(input){
+    var val = input.value.replace(/\D/g,''); // strip non-digits
+    input.value = val; // keep only digits
+    var err = document.getElementById('mobileError');
+    var ok  = document.getElementById('mobileOk');
+    if(!val){ err.style.display='none'; ok.style.display='none'; input.style.borderColor='#c4b5fd'; return; }
+    var valid = /^[6-9]\d{9}$/.test(val);
+    if(valid){
+        err.style.display='none';
+        ok.style.display='block';
+        input.style.borderColor='#22c55e';
+        input.style.background='#f0fdf4';
+    } else {
+        ok.style.display='none';
+        err.style.display='block';
+        input.style.borderColor='#ef4444';
+        input.style.background='#fff5f5';
+    }
+}
+
+function validateProfileForm(){
+    var mobile = document.getElementById('mobileInput');
+    if(mobile && mobile.value){
+        var valid = /^[6-9]\d{9}$/.test(mobile.value);
+        if(!valid){
+            document.getElementById('mobileError').style.display='block';
+            document.getElementById('mobileOk').style.display='none';
+            mobile.style.borderColor='#ef4444';
+            mobile.focus();
+            return false;
+        }
+    }
+    var email = document.getElementById('emailInput');
+    if(email && email.value){
+        var validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim());
+        if(!validEmail){
+            document.getElementById('emailError').style.display='block';
+            document.getElementById('emailOk').style.display='none';
+            email.style.borderColor='#ef4444';
+            email.focus();
+            return false;
+        }
+    }
+    return true;
+}
+
+function openEmergencyModal(){
+    document.getElementById('emergencyOverlay').style.display = 'flex';
+    document.getElementById('emg_location').focus();
+}
+function closeEmergencyModal(){
+    document.getElementById('emergencyOverlay').style.display = 'none';
+    document.getElementById('emg_location').value = '';
+    document.getElementById('emg_reason').value  = '';
+}
+function submitEmergency(){
+    const location = document.getElementById('emg_location').value.trim();
+    const reason   = document.getElementById('emg_reason').value.trim();
+    if(!location){ alert('Please enter your location.'); return; }
+    if(!reason)  { alert('Please describe the emergency.'); return; }
+
+    fetch('/patient/emergency', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            patient_username: '{{ patient.username }}',
+            patient_name:     '{{ patient.name }}',
+            location:         location,
+            reason:           reason
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        closeEmergencyModal();
+        if(data.status === 'ok'){
+            alert('🚑 Emergency alert sent! Staff have been notified. Help is on the way.');
+        } else {
+            alert('⚠️ Could not send alert: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(() => alert('⚠️ Network error. Please call emergency services directly.'));
+}
+
+function searchHospital(){
+    var disease = document.getElementById('diseaseInput').value.trim();
+    if(!disease){
+        var inp = document.getElementById('diseaseInput');
+        inp.style.borderColor='#F44336'; inp.style.boxShadow='0 0 0 4px rgba(244,67,54,0.15)'; inp.focus();
+        setTimeout(function(){ inp.style.borderColor='#c7d2fe'; inp.style.boxShadow='none'; }, 1800);
+        return;
+    }
+    var resultDiv = document.getElementById('hospitalResult');
+    resultDiv.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:22px;color:#4CAF50;font-size:15px;font-weight:600;">'+
+        '<span style="font-size:22px;animation:spin 1s linear infinite;display:inline-block;">🔄</span> Finding nearest hospital…</div>';
+    fetch('/search_hospital', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'disease=' + encodeURIComponent(disease)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        if(data.status === 'ok'){
+            var h = data.hospital;
+            var rawDist = h.distance || h.distance_km || '';
+            var distVal = String(rawDist).replace(/\s*km\s*/gi,'').trim();
+            var specialty = h.specialty || h.disease || '';
+            var hospName = h.name || 'Unknown Hospital';
+            resultDiv.innerHTML =
+                '<div class="hospital-result-card">'+
+                    '<div class="hosp-header">'+
+                        '<div class="hosp-header-top"><div class="hosp-icon">🏥</div><span class="hosp-available">✅ Available</span></div>'+
+                        '<div class="hosp-title">'+hospName+'</div>'+
+                        '<div class="hosp-subtitle">Best match for: '+specialty+'</div>'+
+                    '</div>'+
+                    '<div class="hosp-details">'+
+                        '<div class="hosp-field"><div class="hosp-field-label">🏨 Hospital Name</div><div class="hosp-field-value">'+hospName+'</div></div>'+
+                        '<div class="hosp-field"><div class="hosp-field-label">📍 Distance</div><div class="hosp-field-value hosp-distance-val">'+distVal+' km away</div></div>'+
+                        '<div class="hosp-field"><div class="hosp-field-label">🩺 Specialty</div><div class="hosp-field-value hosp-specialty-val">'+specialty+'</div></div>'+
+                    '</div>'+
+                '</div>';
+        } else {
+            resultDiv.innerHTML =
+                '<div class="hosp-not-found"><span style="font-size:24px;">❌</span>'+
+                '<div><div style="font-weight:700;margin-bottom:4px;">No hospital found</div>'+
+                '<div style="font-size:13px;opacity:0.8;">No match for "<b>'+disease+'</b>". Try another specialty.</div></div></div>';
+        }
+    })
+    .catch(function(){
+        resultDiv.innerHTML =
+            '<div class="hosp-not-found"><span style="font-size:24px;">⚠️</span>'+
+            '<div><div style="font-weight:700;margin-bottom:4px;">Connection Error</div>'+
+            '<div style="font-size:13px;opacity:0.8;">Could not reach the server. Please try again.</div></div></div>';
+    });
+}
+
+var _knownStatuses={}, _apptIdToDate={};
+{% for a in appointments %}_knownStatuses["{{ a._id }}"]="{{ a.status }}"; _apptIdToDate["{{ a._id }}"]="{{ a.date }}";{% endfor %}
+{% for h in history %}_knownStatuses["{{ h._id }}"]="{{ h.status }}"; _apptIdToDate["{{ h._id }}"]="{{ h.date }}";{% endfor %}
+
+function showLiveToast(msg,color){
+    var t=document.createElement('div');
+    t.style.cssText='position:fixed;top:20px;right:20px;z-index:9999;background:'+color+';color:white;padding:14px 22px;border-radius:12px;font-size:15px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:320px;';
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(function(){t.style.transition='opacity 0.4s';t.style.opacity='0';setTimeout(function(){t.remove();},420);},4000);
+}
+function updateCalendarDotColor(id,status){
+    var dot=document.querySelector('.event-dot[data-appointment-id="'+id+'"]'); if(!dot) return;
+    var cm={'Completed':'#4CAF50','Cancelled':'#F44336','Rescheduled':'#FFC107','Booked':'#2196F3'};
+    dot.style.backgroundColor=cm[status]||'#2196F3';
+}
+function moveToHistory(apptId,doctor,date,status){
+    document.querySelectorAll('.appointments-scroll .appointment-card').forEach(function(card){
+        if(card.querySelector('[onclick*="'+apptId+'"]')){
+            card.style.transition='all 0.4s';card.style.opacity='0';card.style.transform='translateX(-60px)';
+            setTimeout(function(){card.remove();var s=document.querySelector('.appointments-scroll');if(s&&s.querySelectorAll('.appointment-card').length===0)s.innerHTML='<div class="empty-state"><p>📭 No appointments scheduled</p></div>';},420);
+        }
+    });
+    var hs=document.querySelector('.history-scroll'); if(!hs) return;
+    var es=hs.querySelector('.empty-state'); if(es) es.remove();
+    if(document.getElementById('history-'+apptId)) return;
+    var nc=document.createElement('div'); nc.className='appointment-card history-item'; nc.id='history-'+apptId; nc.style.cssText='opacity:0;transform:translateX(40px);';
+    nc.innerHTML='<div class="appointment-header"><span class="status-badge '+status+'">'+status+'</span><div style="display:flex;gap:8px;align-items:center;"><span class="date-badge">'+date+'</span><button class="btn-delete-history" onclick="deleteHistoryItem(\''+apptId+'\')">✕</button></div></div><p><span class="icon">👨‍⚕️</span><b>Doctor:</b> '+doctor+'</p>';
+    hs.insertBefore(nc,hs.firstChild); historyIdToDate[apptId]=date; _apptIdToDate[apptId]=date;
+    setTimeout(function(){nc.style.transition='all 0.45s cubic-bezier(0.34,1.56,0.64,1)';nc.style.opacity='1';nc.style.transform='translateX(0)';},50);
+}
+function pollAppointmentStatus(){
+    fetch('/api/patient-appointments/{{ patient.username }}')
+    .then(function(r){return r.json();}).then(function(data){
+        if(!data||!data.appointments) return;
+        data.appointments.forEach(function(appt){
+            var id=appt.id,newS=appt.status,oldS=_knownStatuses[id];
+            if(oldS===newS) return; _knownStatuses[id]=newS; updateCalendarDotColor(id,newS);
+            if((newS==='Completed'||newS==='Cancelled')&&oldS!=='Completed'&&oldS!=='Cancelled'){
+                moveToHistory(id,appt.doctor,appt.date,newS);
+                showLiveToast((newS==='Completed'?'✅':'❌')+' Appointment with '+appt.doctor+' marked '+newS,newS==='Completed'?'#4CAF50':'#F44336');
+            }
+        });
+    }).catch(function(e){console.warn('Poll error:',e);});
+}
+setTimeout(function(){pollAppointmentStatus();setInterval(pollAppointmentStatus,8000);},8000);
+
+var _activeDotPopover=null;
+function closeDotPopover(){
+    if(_activeDotPopover){
+        _activeDotPopover.style.opacity='0';_activeDotPopover.style.transform='scale(0.8)';
+        var p=_activeDotPopover;setTimeout(function(){if(p.parentNode)p.parentNode.removeChild(p);},200);_activeDotPopover=null;
+    }
+}
+function openDotPopover(dotEl,ev){
+    closeDotPopover();
+    var apptId=ev.id,doctor=ev.extendedProps.doctor||'Doctor',time=ev.extendedProps.time||'',
+        status=ev.extendedProps.status||'Booked',dateStr=ev.start||'';
+    var bc={'Completed':'#4CAF50','Cancelled':'#F44336','Rescheduled':'#FFC107','Booked':'#2196F3'};
+    var isActive=(status==='Booked'||status==='Rescheduled');
+    var rows='';
+    if(isActive) rows+='<button class="dp-action dp-cancel" id="_dpCancel"><span class="dp-icon">❌</span><span class="dp-label"><span>Cancel Appointment</span><span>Mark as cancelled</span></span></button>';
+    if(status!=='Completed') rows+='<button class="dp-action dp-delete" id="_dpDelete"><span class="dp-icon">🗑️</span><span class="dp-label"><span>Delete Appointment</span><span>Remove permanently</span></span></button>';
+    if(isActive) rows+='<button class="dp-action dp-reschedule" id="_dpReschedule"><span class="dp-icon">🔁</span><span class="dp-label"><span>Reschedule</span><span>Pick a new date &amp; time</span></span></button>';
+    rows+='<button class="dp-action dp-remove" id="_dpRemove"><span class="dp-icon">👁️</span><span class="dp-label"><span>Hide from Calendar</span><span>Just hide the dot</span></span></button>';
+    var pop=document.createElement('div'); pop.className='dot-popover';
+    pop.innerHTML='<div class="dot-popover-title">👨‍⚕️ '+doctor+'</div>'+
+        '<div class="dot-popover-sub">'+(dateStr?'📅 '+dateStr+'&nbsp;&nbsp;':'')+(time?'⏰ '+time+'&nbsp;&nbsp;':'')+
+        '<span style="background:'+bc[status]+';color:white;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;">'+status+'</span></div>'+
+        '<hr class="dot-popover-divider">'+rows+'<button class="dp-close" id="_dpClose">✕ Close</button>';
+    document.body.appendChild(pop); _activeDotPopover=pop;
+    var rect=dotEl.getBoundingClientRect();
+    var popW=300;
+    var vw=window.innerWidth, vh=window.innerHeight;
+    var left=Math.max(10,Math.min(rect.left+rect.width/2-popW/2,vw-popW-10));
+    pop.style.left=left+'px';
+    var popH=pop.offsetHeight||320;
+    var topAbove=rect.top-popH-12;
+    var topBelow=rect.bottom+12;
+    if(topAbove>=10){ pop.style.top=topAbove+'px'; }
+    else if(topBelow+popH<=vh-10){ pop.style.top=topBelow+'px'; }
+    else { pop.style.top=Math.max(10,Math.round((vh-popH)/2))+'px'; }
+    document.getElementById('_dpClose').addEventListener('click',function(e){e.stopPropagation();closeDotPopover();});
+    if(isActive&&document.getElementById('_dpCancel'))
+        document.getElementById('_dpCancel').addEventListener('click',function(e){e.stopPropagation();closeDotPopover();openCancelModal(apptId);});
+    if(status!=='Completed'&&document.getElementById('_dpDelete'))
+        document.getElementById('_dpDelete').addEventListener('click',function(e){e.stopPropagation();closeDotPopover();openDotCancelModal(apptId,doctor,dateStr,time);});
+    if(isActive&&document.getElementById('_dpReschedule'))
+        document.getElementById('_dpReschedule').addEventListener('click',function(e){e.stopPropagation();closeDotPopover();openReschedule(apptId);});
+    document.getElementById('_dpRemove').addEventListener('click',function(e){
+        e.stopPropagation();closeDotPopover();
+        dotEl.style.transition='transform 0.25s,opacity 0.25s';dotEl.style.transform='scale(0)';dotEl.style.opacity='0';
+        setTimeout(function(){var c=dotEl.parentNode;dotEl.remove();if(c&&c.querySelectorAll('.event-dot').length===0)c.remove();},260);
+        showLiveToast('👁️ Dot hidden from calendar','#667eea');
+    });
+}
+document.addEventListener('click',function(e){if(_activeDotPopover&&!_activeDotPopover.contains(e.target))closeDotPopover();});
+
+document.addEventListener('DOMContentLoaded', function() {
+    var chartData=[
+        {{ appointments|selectattr("status","equalto","Booked")|list|length }},
+        {{ appointments|selectattr("status","equalto","Rescheduled")|list|length }},
+        {{ history|selectattr("status","equalto","Completed")|list|length }},
+        {{ history|selectattr("status","equalto","Cancelled")|list|length }}
+    ];
+    var total=chartData.reduce(function(a,b){return a+b;},0);
+    var emptyEl=document.getElementById('chartEmptyState');
+    var ctx=document.getElementById('statsChart');
+    if(total===0){
+        emptyEl.style.display='flex';
+        if(ctx) new Chart(ctx,{type:'doughnut',data:{labels:['No data yet'],datasets:[{data:[1],backgroundColor:['#eef0ff'],borderWidth:0,hoverOffset:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'72%',animation:{duration:0},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
+    } else {
+        emptyEl.style.display='none';
+        if(ctx) new Chart(ctx,{type:'doughnut',data:{labels:['Booked','Rescheduled','Completed','Cancelled'],datasets:[{data:chartData,backgroundColor:['#2196F3','#FFC107','#4CAF50','#F44336'],borderWidth:4,borderColor:'#fff',hoverOffset:20}]},options:{responsive:true,maintainAspectRatio:true,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var pct=Math.round(c.parsed/total*100);return ' '+c.label+': '+c.parsed+' ('+pct+'%)';}}}}}});
+    }
+
+    var eventsData=[];
+    {% for a in appointments %}eventsData.push({id:"{{ a._id }}",start:"{{ a.date }}",extendedProps:{doctor:"{{ a.doctor }}",time:"{{ a.time }}",status:"{{ a.status }}",isHistory:false}});{% endfor %}
+    {% for h in history %}eventsData.push({id:"{{ h._id }}",start:"{{ h.date }}",extendedProps:{doctor:"{{ h.doctor }}",time:"{{ h.get('time','') }}",status:"{{ h.status }}",isHistory:true}});{% endfor %}
+    var eventsByDate={};
+    eventsData.forEach(function(ev){if(!eventsByDate[ev.start])eventsByDate[ev.start]=[];eventsByDate[ev.start].push(ev);});
+    var cal=new FullCalendar.Calendar(document.getElementById('calendar'),{
+        initialView:'dayGridMonth',headerToolbar:{left:'prev,next today',center:'title',right:''},
+        height:'auto',fixedWeekCount:false,showNonCurrentDates:false,events:[],
+        dayCellDidMount:function(info){
+            var d=info.date;
+            var dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+            var dayEvents=eventsByDate[dateStr]; if(!dayEvents||!dayEvents.length) return;
+            var frame=info.el.querySelector('.fc-daygrid-day-frame'); frame.style.position='relative';
+            var dc=document.createElement('div');
+            dc.style.cssText='display:flex;flex-wrap:wrap;justify-content:center;gap:4px;position:absolute;bottom:4px;left:0;right:0;';
+            dayEvents.forEach(function(ev){
+                var dot=document.createElement('span'); dot.className='event-dot';
+                dot.setAttribute('data-appointment-id',ev.id);
+                var cm={'Completed':'#4CAF50','Cancelled':'#F44336','Rescheduled':'#FFC107','Booked':'#2196F3'};
+                dot.style.backgroundColor=cm[ev.extendedProps.status]||'#2196F3';
+                dot.title=ev.extendedProps.doctor+(ev.extendedProps.time?' @ '+ev.extendedProps.time:'')+'  ['+ev.extendedProps.status+']';
+                dot.addEventListener('click',function(e){e.stopPropagation();openDotPopover(dot,ev);});
+                dc.appendChild(dot);
+            });
+            frame.appendChild(dc);
+        }
+    });
+    cal.render();
+});
+
+// Auto-open profile modal if profile is incomplete
+{% if not patient.get('mobile') or not patient.get('email') or not patient.get('age') %}
+window.addEventListener('load', function(){
+    setTimeout(function(){
+        document.getElementById('profileModal').style.display = 'flex';
+    }, 800);
+});
+{% endif %}
+</script>
+
+{% endblock %}

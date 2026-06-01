@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Digital Hospital Queue | Login</title>
+<title>Ever Well Hospital | Login</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#6C63FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ever Well">
+<link rel="apple-touch-icon" href="/static/images/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Ever Well Hospital">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -280,8 +288,10 @@ body.dark-mode .theme-toggle {
 <div class="glass-card">
   <div class="hero">
     <div class="brand">
-      <div class="brand-icon">🏥</div>
-      <div><h3>Digital Hospital Queue</h3><span>Healthcare Management System</span></div>
+      <div class="brand-icon" style="padding:0;overflow:hidden;background:transparent;border:none;box-shadow:none;">
+        <img src="/static/images/logo.png" alt="Ever Well" style="width:52px;height:52px;border-radius:14px;object-fit:cover;">
+      </div>
+      <div><h3>Ever Well Hospital</h3><span>Your Health, Our Priority</span></div>
     </div>
     <div class="headline">
       <h1>Smart Queue.<br><em>Better Care.</em><br>Every Day.</h1>
@@ -296,6 +306,11 @@ body.dark-mode .theme-toggle {
   </div>
 
   <div class="form-panel">
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:22px;">
+      <img src="/static/images/logo.png" alt="Ever Well" style="width:72px;height:72px;border-radius:18px;object-fit:cover;box-shadow:0 8px 24px rgba(108,99,255,.25);margin-bottom:10px;">
+      <div style="font-size:18px;font-weight:900;color:#4840a0;letter-spacing:-.3px;">Ever Well Hospital</div>
+      <div style="font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Your Health, Our Priority</div>
+    </div>
     <div class="form-title">
       <h2>Welcome Back 👋</h2>
       <p>Sign in to your hospital portal</p>
@@ -415,5 +430,11 @@ if (saved === 'light') {
   btn.setAttribute('data-tooltip', 'Dark mode');
 }
 </script>
+
+<!-- PWA Install Button -->
+<button id="pwaInstallBtn" onclick="installPWA()" style="display:none;position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:linear-gradient(135deg,#6C63FF,#5a52e0);color:#fff;border:none;border-radius:50px;padding:12px 24px;font-size:13px;font-weight:700;cursor:pointer;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(108,99,255,.45);font-family:'Outfit',sans-serif;white-space:nowrap;">
+  📲 Install Ever Well App
+</button>
+<script src="/static/pwa.js"></script>
 </body>
 </html>
