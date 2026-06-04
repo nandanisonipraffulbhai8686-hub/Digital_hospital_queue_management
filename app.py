@@ -26,7 +26,15 @@ from db import (
 from reminders import start_reminder_scheduler
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-fallback-change-in-prod")
+
+# Start scheduler when running under gunicorn or directly
+if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    from reminders import start_reminder_scheduler
+    from db import appointments_col, patients_col as _patients_col
+    start_reminder_scheduler(appointments_col, _patients_col)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Session config — 30 minute inactivity timeout
@@ -1695,9 +1703,4 @@ def admin_delete_staff():
 
 # ================= RUN =================
 if __name__ == "__main__":
-    # Start reminder scheduler only in the main process (not the reloader child)
-    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        import logging
-        logging.basicConfig(level=logging.INFO)
-        start_reminder_scheduler(appointments_col, patients_col)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
