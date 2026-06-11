@@ -1064,8 +1064,8 @@
 
     {% for d in doctors %}
     rows.push([
-        "{{ d.name|replace(\"'\", \"\") }}",
-        "{{ d.department|replace(\"'\", \"\") }}",
+        "{{ d.name|replace("'", "") }}",
+        "{{ d.department|replace("'", "") }}",
         "{{ d.username }}",
         "{{ d.get('status_override', 'available') }}"
     ]);
