@@ -31,7 +31,7 @@ body {
   min-height:100vh;
   font-family:'Outfit',sans-serif;
   background:linear-gradient(145deg,#3d35a8 0%,#5a4fcf 30%,#7c6fcd 65%,#4840a0 100%);
-  overflow:hidden;
+  overflow:auto;
   transition: background 0.5s ease;
 }
 
@@ -435,6 +435,26 @@ if (saved === 'light') {
 <button id="pwaInstallBtn" onclick="installPWA()" style="display:none;position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:linear-gradient(135deg,#6C63FF,#5a52e0);color:#fff;border:none;border-radius:50px;padding:12px 24px;font-size:13px;font-weight:700;cursor:pointer;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(108,99,255,.45);font-family:'Outfit',sans-serif;white-space:nowrap;">
   📲 Install Ever Well App
 </button>
+
+<!-- iOS Safari install hint -->
+<div id="iosInstallHint" style="display:none;position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(30,24,70,0.97);color:#fff;border:1.5px solid rgba(124,111,205,0.4);border-radius:18px;padding:16px 20px;font-size:13px;font-family:'Outfit',sans-serif;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+  <div style="font-size:22px;margin-bottom:8px;">📲</div>
+  <div style="font-weight:700;margin-bottom:6px;">Install Ever Well App</div>
+  <div style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.6;">Tap <strong style="color:#fff;">Share</strong> <span style="font-size:15px;">⎙</span> then <strong style="color:#fff;">"Add to Home Screen"</strong></div>
+  <button onclick="document.getElementById('iosInstallHint').style.display='none'" style="margin-top:12px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:10px;padding:6px 16px;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;">Got it</button>
+</div>
+
 <script src="/static/pwa.js"></script>
+<script>
+// Show iOS install hint if on Safari and not already installed
+(function() {
+  var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone === true;
+  if (isIos && isSafari && !isStandalone) {
+    document.getElementById('iosInstallHint').style.display = 'block';
+  }
+})();
+</script>
 </body>
 </html>

@@ -17,19 +17,19 @@
     background: linear-gradient(135deg, #3b2f8f 0%, #5b4fcf 40%, #7b6ee8 80%, #9d8ff5 100%);
     display: flex; align-items: center; justify-content: center;
     font-family: 'Inter', sans-serif; padding: 30px 16px;
-    position: relative; overflow: hidden;
+    position: relative; overflow: auto;
     transition: background 0.5s ease;
   }
-  body::before { content: ''; position: fixed; width: 500px; height: 500px; background: radial-gradient(circle, rgba(162,155,254,0.18) 0%, transparent 70%); top: -150px; left: -100px; border-radius: 50%; pointer-events: none; }
-  body::after  { content: ''; position: fixed; width: 400px; height: 400px; background: radial-gradient(circle, rgba(108,92,231,0.2) 0%, transparent 70%); bottom: -100px; right: -80px; border-radius: 50%; pointer-events: none; }
-  .orb { position: fixed; border-radius: 50%; pointer-events: none; animation: float 8s ease-in-out infinite; }
+  body::before { content:''; position: fixed; width: 500px; height: 500px; background: radial-gradient(circle, rgba(162,155,254,0.18) 0%, transparent 70%); top: -150px; left: -100px; border-radius: 50%; pointer-events: none; z-index:0; }
+  body::after  { content:''; position: fixed; width: 400px; height: 400px; background: radial-gradient(circle, rgba(108,92,231,0.2) 0%, transparent 70%); bottom: -100px; right: -80px; border-radius: 50%; pointer-events: none; z-index:0; }
+  .orb { position: fixed; border-radius: 50%; pointer-events: none; animation: float 8s ease-in-out infinite; z-index:0; }
   .orb-1 { width:80px;  height:80px;  background:rgba(255,255,255,0.06); top:20%; left:8%;    animation-delay:0s; }
   .orb-2 { width:50px;  height:50px;  background:rgba(255,255,255,0.08); top:60%; left:5%;    animation-delay:2s; }
   .orb-3 { width:120px; height:120px; background:rgba(162,155,254,0.1);  top:35%; left:15%;   animation-delay:4s; }
   .orb-4 { width:60px;  height:60px;  background:rgba(255,255,255,0.07); bottom:25%; right:6%; animation-delay:1s; }
   @keyframes float { 0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-18px) scale(1.05);} }
 
-  .container { display:flex; background:#fff; border-radius:28px; overflow:hidden; max-width:900px; width:100%; box-shadow:0 40px 80px rgba(30,20,80,0.35); animation:slideUp .6s cubic-bezier(0.22,1,0.36,1) both; transition:background 0.4s; }
+  .container { display:flex; background:#fff; border-radius:28px; overflow:hidden; max-width:900px; width:100%; box-shadow:0 40px 80px rgba(30,20,80,0.35); animation:slideUp .6s cubic-bezier(0.22,1,0.36,1) both; transition:background 0.4s; position:relative; z-index:1; }
   @keyframes slideUp { from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);} }
 
   /* LEFT */
